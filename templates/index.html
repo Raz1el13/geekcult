@@ -1,572 +1,113 @@
 {% extends "base.html" %}
+{% block title %}Имущество — ГикКульт{% endblock %}
+
+{% set STATUS_IMG = {
+    'НашЭтаж':      'loc_nashetazh.jpg',
+    'Склад ЧелГУ':  'loc_sklad.jpg',
+    'Хобби-Студия': 'loc_hobby.jpg',
+    'На руках':     'loc_narukah.jpg'
+} %}
 
 {% block content %}
 
-<div class="gc-home-header mb-4">
-    <div>
-        <div class="gc-eyebrow">GEEKCULT • ИМУЩЕСТВО</div>
-
-        <h1 class="mb-2">
-            Все предметы
-        </h1>
-
-        <p class="text-muted mb-0">
-            Найдите нужную вещь по названию, описанию или местонахождению.
-        </p>
+<div class="flex between wrap mb-3" style="gap:12px">
+    <h1 class="page-title" style="margin-bottom:0">Имущество</h1>
+    <div style="position:relative">
+        <input type="text" id="search-input" class="input" placeholder="Поиск…"
+               value="{{ request.args.get('q', '') }}"
+               style="width:220px;padding-right:36px"
+               oninput="liveSearch(this.value)">
+        <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none">🔍</span>
     </div>
 </div>
 
-
-<!-- ЖИВОЙ ПОИСК -->
-
-<div class="gc-search-card mb-4">
-
-    <div class="row g-2">
-
-        <div class="col-md-9">
-
-            <div class="gc-search-wrapper">
-
-                <span class="gc-search-icon">
-                    🔎
-                </span>
-
-                <input
-                    type="search"
-                    id="liveSearch"
-                    class="form-control gc-search-input"
-                    placeholder="Начните вводить название, место или описание..."
-                    autocomplete="off"
-                >
-
-                <button
-                    type="button"
-                    id="clearSearch"
-                    class="gc-search-clear"
-                    aria-label="Очистить поиск"
-                    style="display: none;"
-                >
-                    ×
-                </button>
-
-            </div>
-
-        </div>
-
-        <div class="col-md-3">
-
-            <select
-                id="statusFilter"
-                class="form-select gc-search-select"
-            >
-
-                <option value="">
-                    Все статусы
-                </option>
-
-                {% for status in statuses %}
-
-                    <option value="{{ status }}">
-                        {{ status }}
-                    </option>
-
-                {% endfor %}
-
-            </select>
-
-        </div>
-
-    </div>
-
-    <div
-        id="searchInfo"
-        class="small text-muted mt-3"
-    >
-        Показаны все предметы
-    </div>
-
-</div>
-
-
-<!-- СТАТУСЫ -->
-
-<div class="d-flex flex-wrap align-items-center gap-2 mb-4">
-
-    <span class="text-muted small me-1">
-        Местонахождение:
-    </span>
-
-    <button
-        type="button"
-        class="gc-filter active status-button"
-        data-status=""
-    >
-        Все
-    </button>
-
+<div class="chips mb-3">
+    <a href="/" class="chip {% if not request.args.get('status') %}active{% endif %}">Все</a>
     {% for status in statuses %}
-
-        <button
-            type="button"
-            class="gc-filter status-button"
-            data-status="{{ status }}"
-        >
+        <a href="/?status={{ status }}" class="chip {% if request.args.get('status') == status %}active{% endif %}">
             {{ status }}
-        </button>
-
+        </a>
     {% endfor %}
-
 </div>
 
-
-<!-- КАРТОЧКИ -->
-
-<div
-    id="itemsGrid"
-    class="row g-4"
->
-
+<div class="grid" id="items-grid">
     {% for item in items %}
+    <div class="card card-item item-card" data-name="{{ item.name|lower }}" style="padding:0;overflow:hidden">
 
-        <div
-            class="col-sm-6 col-lg-4 item-column"
-            data-name="{{ item.name|lower }}"
-            data-description="{{ (item.description or '')|lower }}"
-            data-status="{{ item.status|lower }}"
-            data-holder="{{ (item.holder or '')|lower }}"
-        >
-
-            <div class="card h-100 gc-item-card">
-
-                <div class="gc-item-card-top">
-
-                    <div class="gc-item-icon">
-                        📦
-                    </div>
-
-                    {% if item.status == 'На руках' %}
-
-                        <span class="gc-badge gc-badge-taken">
-                            На руках
-                        </span>
-
-                    {% elif item.status == 'Склад ЧелГУ' %}
-
-                        <span class="gc-badge gc-badge-warehouse">
-                            Склад ЧелГУ
-                        </span>
-
-                    {% elif item.status == 'НашЭтаж' %}
-
-                        <span class="gc-badge gc-badge-floor">
-                            НашЭтаж
-                        </span>
-
-                    {% else %}
-
-                        <span class="gc-badge gc-badge-studio">
-                            {{ item.status }}
-                        </span>
-
-                    {% endif %}
-
-                </div>
-
-
-                <div class="card-body">
-
-                    <h5 class="card-title gc-item-title">
-                        {{ item.name }}
-                    </h5>
-
-                    {% if item.description %}
-
-                        <p class="card-text text-muted gc-item-description">
-                            {{ item.description[:120] }}
-
-                            {% if item.description|length > 120 %}
-                                …
-                            {% endif %}
-                        </p>
-
-                    {% else %}
-
-                        <p class="card-text text-muted gc-item-description">
-                            Описание отсутствует
-                        </p>
-
-                    {% endif %}
-
-
-                    <div class="gc-location">
-
-                        <div class="gc-location-icon">
-                            📍
-                        </div>
-
-                        <div>
-
-                            <div class="gc-location-label">
-                                Местонахождение
-                            </div>
-
-                            <div class="gc-location-value">
-                                {{ item.status }}
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    {% if item.holder %}
-
-                        <div class="gc-holder">
-
-                            <span>
-                                👤
-                            </span>
-
-                            <span>
-                                {{ item.holder }}
-                            </span>
-
-                        </div>
-
-                    {% endif %}
-
-                </div>
-
-
-                <div class="card-footer gc-card-footer">
-
-                    <a
-                        href="{{ url_for(
-                            'main.item_detail',
-                            item_id=item.id
-                        ) }}"
-                        class="btn btn-gc-primary btn-sm"
-                    >
-                        Подробнее
-                    </a>
-
-                    {% include "_item_actions.html" %}
-
-                </div>
-
-            </div>
-
+        <!-- Фото на всю ширину, cover чтобы без пустых мест -->
+        <div style="height:200px;overflow:hidden">
+            {% set img = STATUS_IMG.get(item.status) %}
+            {% if img %}
+            <img src="{{ url_for('static', filename='img/' + img) }}"
+                 style="width:100%;height:100%;object-fit:cover;display:block">
+            {% endif %}
         </div>
 
-    {% endfor %}
+        <!-- Статус под фото -->
+        <div style="padding:10px 16px 0">
+            {% if item.status == 'На руках' %}
+                <span class="badge badge-yellow">👤 {{ item.status }}</span>
+            {% elif item.status == 'Склад ЧелГУ' %}
+                <span class="badge badge-black">🏛 {{ item.status }}</span>
+            {% elif item.status == 'НашЭтаж' %}
+                <span class="badge badge-green">🏢 {{ item.status }}</span>
+            {% else %}
+                <span class="badge badge-blue">🎨 {{ item.status }}</span>
+            {% endif %}
+        </div>
 
-</div>
+        <!-- Контент -->
+        <div style="padding:10px 16px 16px;display:flex;flex-direction:column;gap:8px">
+            <span class="bold" style="font-size:15px;line-height:1.3">{{ item.name }}</span>
 
+            {% if item.description %}
+                <p class="muted" style="line-height:1.5;font-size:13px">
+                    {{ item.description[:80] }}{% if item.description|length > 80 %}…{% endif %}
+                </p>
+            {% endif %}
 
-<!-- НИЧЕГО НЕ НАЙДЕНО -->
+            {% if item.holder %}
+                <p style="font-size:13px">👤 <span class="muted">У кого:</span> <strong>{{ item.holder }}</strong></p>
+            {% endif %}
 
-<div
-    id="noResults"
-    class="gc-empty text-center"
-    style="display: none;"
->
-
-    <div class="gc-empty-icon">
-        🔎
+            <div class="flex between" style="align-items:center;margin-top:4px">
+                <span class="muted" style="font-size:12px">{{ item.updated_at.strftime('%d.%m.%Y') if item.updated_at else '' }}</span>
+                <a href="/item/{{ item.id }}" class="btn btn-primary btn-sm">Открыть →</a>
+            </div>
+        </div>
     </div>
-
-    <h4>
-        Ничего не найдено
-    </h4>
-
-    <p class="text-muted">
-        Попробуйте изменить поисковый запрос или фильтр.
-    </p>
-
-    <button
-        type="button"
-        id="resetSearch"
-        class="btn btn-gc-primary"
-    >
-        Сбросить поиск
-    </button>
-
+    {% else %}
+    <div class="card" style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted)">
+        <p style="font-size:32px;margin-bottom:12px">📦</p>
+        <p style="font-size:16px;font-weight:600;color:var(--black);margin-bottom:4px">Ничего не найдено</p>
+        <p>Попробуй изменить фильтр или добавь предмет в <a href="/admin" style="color:var(--black)">админке</a></p>
+    </div>
+    {% endfor %}
 </div>
 
+<div id="no-results" style="display:none">
+    <div class="card" style="text-align:center;padding:48px;color:var(--muted)">
+        <p style="font-size:32px;margin-bottom:12px">🔍</p>
+        <p style="font-size:16px;font-weight:600;color:var(--black);margin-bottom:4px">Ничего не найдено</p>
+        <p>Попробуй другой запрос</p>
+    </div>
+</div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-
-    const searchInput = document.getElementById('liveSearch');
-    const statusFilter = document.getElementById('statusFilter');
-    const clearButton = document.getElementById('clearSearch');
-    const resetButton = document.getElementById('resetSearch');
-    const searchInfo = document.getElementById('searchInfo');
-    const noResults = document.getElementById('noResults');
-
-    const itemColumns = Array.from(
-        document.querySelectorAll('.item-column')
-    );
-
-    const statusButtons = Array.from(
-        document.querySelectorAll('.status-button')
-    );
-
-
-    function normalizeText(text) {
-        return (text || '')
-            .toLowerCase()
-            .trim()
-            .replace(/\s+/g, ' ');
-    }
-
-
-    function applySearch() {
-
-        const searchText = normalizeText(
-            searchInput.value
-        );
-
-        const selectedStatus = normalizeText(
-            statusFilter.value
-        );
-
-        /*
-         * Разбиваем запрос на отдельные слова.
-         *
-         * Например:
-         * "ноут лен"
-         *
-         * превратится в:
-         * ["ноут", "лен"]
-         */
-        const words = searchText
-            .split(' ')
-            .filter(word => word.length > 0);
-
-
-        let visibleCount = 0;
-
-
-        itemColumns.forEach(function (column) {
-
-            const name = normalizeText(
-                column.dataset.name
-            );
-
-            const description = normalizeText(
-                column.dataset.description
-            );
-
-            const status = normalizeText(
-                column.dataset.status
-            );
-
-            const holder = normalizeText(
-                column.dataset.holder
-            );
-
-
-            /*
-             * Объединяем всё, по чему можно искать.
-             */
-            const searchableText = [
-                name,
-                description,
-                status,
-                holder
-            ].join(' ');
-
-
-            /*
-             * Каждое введённое слово должно
-             * находиться внутри данных карточки.
-             *
-             * "ноут" найдёт "ноутбук"
-             * "склад" найдёт "Склад ЧелГУ"
-             */
-            const matchesSearch = words.every(function (word) {
-                return searchableText.includes(word);
-            });
-
-
-            const matchesStatus =
-                !selectedStatus ||
-                status === selectedStatus;
-
-
-            const visible =
-                matchesSearch &&
-                matchesStatus;
-
-
-            column.style.display =
-                visible ? '' : 'none';
-
-
-            if (visible) {
-                visibleCount++;
-            }
-
-        });
-
-
-        /*
-         * Кнопка очистки.
-         */
-        clearButton.style.display =
-            searchText.length > 0
-                ? 'block'
-                : 'none';
-
-
-        /*
-         * Информация над результатами.
-         */
-        if (!searchText && !selectedStatus) {
-
-            searchInfo.textContent =
-                'Показаны все предметы';
-
-        } else {
-
-            searchInfo.textContent =
-                'Найдено предметов: ' + visibleCount;
-        }
-
-
-        /*
-         * Экран "Ничего не найдено".
-         */
-        noResults.style.display =
-            visibleCount === 0
-                ? 'block'
-                : 'none';
-
-    }
-
-
-    /*
-     * Поиск происходит СРАЗУ при вводе.
-     */
-    searchInput.addEventListener(
-        'input',
-        applySearch
-    );
-
-
-    /*
-     * Фильтр через select.
-     */
-    statusFilter.addEventListener(
-        'change',
-        function () {
-
-            /*
-             * Синхронизируем кнопки статусов.
-             */
-            statusButtons.forEach(function (button) {
-
-                button.classList.toggle(
-                    'active',
-                    normalizeText(button.dataset.status) ===
-                    normalizeText(statusFilter.value)
-                );
-
-            });
-
-            applySearch();
-
-        }
-    );
-
-
-    /*
-     * Кнопки статусов.
-     */
-    statusButtons.forEach(function (button) {
-
-        button.addEventListener(
-            'click',
-            function () {
-
-                const status =
-                    button.dataset.status || '';
-
-                statusFilter.value = status;
-
-
-                statusButtons.forEach(function (btn) {
-
-                    btn.classList.remove('active');
-
-                });
-
-                button.classList.add('active');
-
-                applySearch();
-
-            }
-        );
-
+function liveSearch(q) {
+    const query = q.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    let visible = 0;
+    cards.forEach(card => {
+        const name = card.dataset.name || '';
+        const show = name.includes(query);
+        card.style.display = show ? '' : 'none';
+        if (show) visible++;
     });
-
-
-    /*
-     * Очистить поиск.
-     */
-    clearButton.addEventListener(
-        'click',
-        function () {
-
-            searchInput.value = '';
-
-            searchInput.focus();
-
-            applySearch();
-
-        }
-    );
-
-
-    /*
-     * Полностью сбросить фильтры.
-     */
-    resetButton.addEventListener(
-        'click',
-        function () {
-
-            searchInput.value = '';
-
-            statusFilter.value = '';
-
-            statusButtons.forEach(function (button) {
-
-                button.classList.remove('active');
-
-            });
-
-            const allButton =
-                document.querySelector(
-                    '.status-button[data-status=""]'
-                );
-
-            if (allButton) {
-                allButton.classList.add('active');
-            }
-
-            applySearch();
-
-        }
-    );
-
-
-    /*
-     * Первоначальное состояние.
-     */
-    applySearch();
-
-});
+    document.getElementById('no-results').style.display = visible === 0 ? 'block' : 'none';
+}
+const initial = document.getElementById('search-input').value;
+if (initial) liveSearch(initial);
 </script>
 
 {% endblock %}

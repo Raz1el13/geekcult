@@ -1,58 +1,72 @@
 {% extends "base.html" %}
 {% block title %}Статистика — ГикКульт{% endblock %}
 {% block content %}
-<h1 class="mb-4">Статистика</h1>
 
-<div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
-        <div class="card text-center gc-stat-card">
-            <div class="card-body">
-                <h2>{{ total }}</h2>
-                <p class="text-muted mb-0">всего предметов</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-md-3">
-        <div class="card text-center gc-stat-card">
-            <div class="card-body">
-                <h2>{{ users_count }}</h2>
-                <p class="text-muted mb-0">участников</p>
-            </div>
-        </div>
-    </div>
+<h1 class="page-title">Статистика</h1>
+
+<div class="grid mb-3" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr));margin-bottom:24px">
     {% for status, count in status_counts %}
-    <div class="col-6 col-md-3">
-        <div class="card text-center gc-stat-card">
-            <div class="card-body">
-                <h2>{{ count }}</h2>
-                <p class="text-muted mb-0">{{ status }}</p>
-            </div>
+    <div class="card" style="display:flex;flex-direction:column;gap:6px">
+        <span style="font-size:36px;font-weight:800;letter-spacing:-1px">{{ count }}</span>
+        <span class="muted" style="font-size:13px;font-weight:500">
+            {% if status == 'На руках' %}👤
+            {% elif status == 'Склад ЧелГУ' %}🏛
+            {% elif status == 'НашЭтаж' %}🏢
+            {% else %}🎨
+            {% endif %}
+            {{ status }}
+        </span>
+        <div style="height:3px;border-radius:2px;margin-top:6px;
+            background:{% if status == 'На руках' %}#FFDD2D
+                       {% elif status == 'НашЭтаж' %}#34C759
+                       {% elif status == 'Склад ЧелГУ' %}#000000
+                       {% else %}#007AFF{% endif %}">
         </div>
+    </div>
+    {% else %}
+    <div class="card" style="grid-column:1/-1;text-align:center;padding:32px;color:var(--muted)">
+        Данных пока нет
     </div>
     {% endfor %}
 </div>
 
-<h3 class="h5 mb-3">Последние перемещения</h3>
-{% if recent_moves %}
-<div class="table-responsive">
-    <table class="table align-middle mb-0">
+<div class="card">
+    <p style="font-size:16px;font-weight:700;margin-bottom:16px">Последние перемещения</p>
+
+    {% if recent_moves %}
+    <table class="tbl">
         <thead>
-            <tr><th>Предмет</th><th>Откуда</th><th>Куда</th><th>Кто</th><th>Когда</th></tr>
+            <tr>
+                <th>Предмет</th>
+                <th>Откуда</th>
+                <th>Куда</th>
+                <th>Когда</th>
+            </tr>
         </thead>
         <tbody>
             {% for h in recent_moves %}
             <tr>
-                <td><a href="{{ url_for('main.item_detail', item_id=h.item_id) }}">{{ h.item.name }}</a></td>
-                <td>{{ h.old_status or '—' }}</td>
-                <td><strong>{{ h.new_status }}</strong></td>
-                <td>{{ h.user.display_name if h.user else '—' }}</td>
-                <td>{{ h.changed_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                <td><a href="/item/{{ h.item_id }}" style="color:var(--black);font-weight:600;text-decoration:none">{{ h.item.name }}</a></td>
+                <td class="muted">{{ h.old_status or '—' }}</td>
+                <td>
+                    {% if h.new_status == 'На руках' %}
+                        <span class="badge badge-yellow">{{ h.new_status }}</span>
+                    {% elif h.new_status == 'Склад ЧелГУ' %}
+                        <span class="badge badge-black">{{ h.new_status }}</span>
+                    {% elif h.new_status == 'НашЭтаж' %}
+                        <span class="badge badge-green">{{ h.new_status }}</span>
+                    {% else %}
+                        <span class="badge badge-blue">{{ h.new_status }}</span>
+                    {% endif %}
+                </td>
+                <td class="muted">{{ h.changed_at.strftime('%d.%m.%Y %H:%M') }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    {% else %}
+    <p class="muted" style="text-align:center;padding:24px 0">Перемещений ещё не было</p>
+    {% endif %}
 </div>
-{% else %}
-<div class="gc-empty">Перемещений ещё не было</div>
-{% endif %}
+
 {% endblock %}
