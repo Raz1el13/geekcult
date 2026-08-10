@@ -30,6 +30,7 @@ def _auto_migrate():
         },
         'items': {
             'holder_user_id': 'INTEGER',
+            'qr_filename': 'VARCHAR(100)',
         },
         'item_history': {
             'user_id': 'INTEGER',
@@ -40,7 +41,10 @@ def _auto_migrate():
         if not inspector.has_table(table):
             continue
 
-        existing = {c['name'] for c in inspector.get_columns(table)}
+        existing = {
+            c['name']
+            for c in inspector.get_columns(table)
+        }
 
         for column, ddl_type in columns.items():
             if column not in existing:
@@ -51,7 +55,7 @@ def _auto_migrate():
                     )
                 )
 
-                # Заполняем full_name для старых пользователей
+                # Заполняем full_name у старых пользователей
                 if table == 'users' and column == 'full_name':
                     db.session.execute(
                         text(
@@ -61,7 +65,7 @@ def _auto_migrate():
                         )
                     )
 
-                # Для старых пользователей администраторский флаг = False
+                # Для старых пользователей is_admin = False
                 if table == 'users' and column == 'is_admin':
                     db.session.execute(
                         text(
@@ -71,11 +75,12 @@ def _auto_migrate():
                         )
                     )
 
-    # В старой базе email был обязательным,
-    # но текущая модель User его не использует.
+    # В старой базе email мог быть обязательным,
+    # хотя текущая модель User его не использует.
     if inspector.has_table('users'):
         existing_users_columns = {
-            c['name'] for c in inspector.get_columns('users')
+            c['name']
+            for c in inspector.get_columns('users')
         }
 
         if 'email' in existing_users_columns:
@@ -103,6 +108,7 @@ def _ensure_admin():
         )
 
         user.set_password(password)
+
         db.session.add(user)
         db.session.commit()
 
@@ -117,6 +123,7 @@ def create_app():
 
     db.init_app(app)
     login_manager.init_app(app)
+
     app.register_blueprint(main)
 
     with app.app_context():
@@ -129,6 +136,7 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
+
     app.run(
         host='0.0.0.0',
         port=int(os.getenv('PORT', 5000)),
