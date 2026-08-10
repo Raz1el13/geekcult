@@ -1,35 +1,37 @@
 {% extends "base.html" %}
 {% block title %}Вход — ГикКульт{% endblock %}
 {% block content %}
-<div class="gc-auth">
+
+<div style="max-width:440px;margin:40px auto">
     <div class="card">
-        <div class="card-body">
-            <h1>Вход</h1>
-            <p class="gc-sub">Рады видеть вас снова</p>
+        <h1 style="font-size:24px;font-weight:800;margin-bottom:6px">Вход</h1>
+        <p class="muted" style="margin-bottom:24px">Войдите чтобы бронировать вещи клуба</p>
 
-            <form method="POST" action="{{ url_for('main.login', next=request.args.get('next')) }}" novalidate>
-                <div class="mb-3">
-                    <label class="form-label" for="username">Логин</label>
-                    <input type="text" class="form-control" id="username" name="username"
-                           value="{{ username or '' }}" autocomplete="username" required>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label" for="password">Пароль</label>
-                    <input type="password" class="form-control" id="password" name="password"
-                           autocomplete="current-password" required>
-                </div>
-                <div class="form-check mb-4">
-                    <input class="form-check-input" type="checkbox" id="remember" name="remember" checked>
-                    <label class="form-check-label" for="remember">Запомнить меня</label>
-                </div>
+        <form method="POST" action="/login">
+            <div style="margin-bottom:14px">
+                <label>Email</label>
+                <input type="email" name="email" class="input" style="width:100%"
+                       placeholder="ivan@example.com" value="{{ email or '' }}" required>
+            </div>
+            <div style="margin-bottom:14px">
+                <label>Пароль</label>
+                <input type="password" name="password" class="input" style="width:100%"
+                       placeholder="••••••" required>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:24px">
+                <input type="checkbox" name="remember" id="remember" style="width:16px;height:16px">
+                <label for="remember" style="font-size:14px;color:var(--muted);margin:0">Запомнить меня</label>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">
+                Войти
+            </button>
+        </form>
 
-                <button type="submit" class="btn btn-gc w-100">Войти</button>
-            </form>
-
-            <p class="text-muted mt-4 mb-0 text-center" style="font-size:.9rem">
-                Нет аккаунта? <a href="{{ url_for('main.register') }}">Зарегистрироваться</a>
-            </p>
-        </div>
+        <p style="text-align:center;margin-top:16px;font-size:14px" class="muted">
+            Нет аккаунта?
+            <a href="/register" style="color:var(--black);font-weight:600">Зарегистрироваться</a>
+        </p>
     </div>
 </div>
+
 {% endblock %}

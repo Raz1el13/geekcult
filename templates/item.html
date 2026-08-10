@@ -64,9 +64,27 @@
                 Сканируй для быстрого доступа
             </p>
             <a href="{{ url_for('main.qr_download', item_id=item.id) }}"
-               class="btn btn-primary" style="width:100%;justify-content:center">
+               class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:10px">
                 ⬇ Скачать QR
             </a>
+
+            {% if item.status != 'На руках' %}
+                {% if current_user.is_authenticated %}
+                <form method="POST" action="/item/{{ item.id }}/book">
+                    <button type="submit" class="btn btn-dark" style="width:100%;justify-content:center">
+                        🤝 Забронировать
+                    </button>
+                </form>
+                {% else %}
+                <a href="/login" class="btn btn-ghost" style="width:100%;justify-content:center;text-align:center">
+                    Войдите чтобы забронировать
+                </a>
+                {% endif %}
+            {% else %}
+                <div style="background:#FFF3CD;border-radius:10px;padding:10px 14px;text-align:center;font-size:13px">
+                    👤 На руках у <strong>{{ item.holder }}</strong>
+                </div>
+            {% endif %}
         </div>
     </div>
 

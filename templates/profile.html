@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Мой профиль — ГикКульт{% endblock %}
+
+{% set STATUS_IMG = {
+    'НашЭтаж':      'loc_nashetazh.jpg',
+    'Склад ЧелГУ':  'loc_sklad.jpg',
+    'Хобби-Студия': 'loc_hobby.jpg',
+    'На руках':     'loc_narukah.jpg'
+} %}
+
+{% block content %}
+
+<h1 class="page-title">Мой профиль</h1>
+
+<!-- Инфо о пользователе -->
+<div class="card mb-3" style="margin-bottom:24px">
+    <div style="display:flex;align-items:center;gap:16px">
+        <div style="width:56px;height:56px;border-radius:50%;background:var(--yellow);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;flex-shrink:0">
+            {{ current_user.name[0].upper() }}
+        </div>
+        <div>
+            <p style="font-size:18px;font-weight:700">{{ current_user.name }}</p>
+            <p class="muted">{{ current_user.email }}</p>
+        </div>
+    </div>
+</div>
+
+<!-- Взятые вещи -->
+<div class="card">
+    <p style="font-size:16px;font-weight:700;margin-bottom:16px">
+        Вещи на руках
+        <span class="muted" style="font-weight:400;font-size:14px">({{ my_items|length }})</span>
+    </p>
+
+    {% if my_items %}
+    <div class="grid">
+        {% for item in my_items %}
+        <div class="card" style="padding:0;overflow:hidden;border:1px solid var(--border)">
+            {% set img = STATUS_IMG.get(item.status) %}
+            {% if img %}
+            <div style="height:140px;overflow:hidden">
+                <img src="{{ url_for('static', filename='img/' + img) }}"
+                     style="width:100%;height:100%;object-fit:cover">
+            </div>
+            {% endif %}
+            <div style="padding:14px">
+                <p style="font-weight:700;margin-bottom:4px">{{ item.name }}</p>
+                {% if item.photo %}
+                <img src="{{ url_for('static', filename='photos/' + item.photo) }}"
+                     style="width:100%;border-radius:8px;margin-bottom:8px;max-height:120px;object-fit:contain;background:var(--bg)">
+                {% endif %}
+                <p class="muted" style="font-size:12px;margin-bottom:12px">
+                    Взято: {{ item.updated_at.strftime('%d.%m.%Y') if item.updated_at else '' }}
+                </p>
+                <div style="display:flex;gap:8px">
+                    <a href="/item/{{ item.id }}" class="btn btn-ghost btn-sm">Подробнее</a>
+                    <form method="POST" action="/item/{{ item.id }}/return" style="flex:1">
+                        <button type="submit" class="btn btn-primary btn-sm" style="width:100%;justify-content:center">
+                            Вернуть
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:32px;color:var(--muted)">
+        <p style="font-size:28px;margin-bottom:8px">📦</p>
+        <p style="font-weight:600;color:var(--black);margin-bottom:4px">У вас нет взятых вещей</p>
+        <p>Перейди в <a href="/" style="color:var(--black)">каталог</a> и забронируй нужное</p>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
