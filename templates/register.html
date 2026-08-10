@@ -1,49 +1,41 @@
-{% extends 'base.html' %}
-{% block title %}Регистрация{% endblock %}
-
+{% extends "base.html" %}
+{% block title %}Регистрация — ГикКульт{% endblock %}
 {% block content %}
-<div class="row justify-content-center mt-5">
-  <div class="col-md-5">
-    <div class="card shadow-sm">
-      <div class="card-body p-4">
-        <h4 class="card-title mb-4 text-center">Регистрация</h4>
+<div class="gc-auth">
+    <div class="card">
+        <div class="card-body">
+            <h1>Создать аккаунт</h1>
+            <p class="gc-sub">Чтобы бронировать имущество клуба в один клик</p>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% for cat, msg in messages %}
-            <div class="alert alert-{{ cat }}">{{ msg }}</div>
-          {% endfor %}
-        {% endwith %}
+            <form method="POST" action="{{ url_for('main.register') }}" novalidate>
+                <div class="mb-3">
+                    <label class="form-label" for="full_name">Имя и фамилия</label>
+                    <input type="text" class="form-control" id="full_name" name="full_name"
+                           value="{{ full_name or '' }}" placeholder="Иван Иванов" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="username">Логин</label>
+                    <input type="text" class="form-control" id="username" name="username"
+                           value="{{ username or '' }}" placeholder="ivanov" autocomplete="username" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="password">Пароль</label>
+                    <input type="password" class="form-control" id="password" name="password"
+                           placeholder="Минимум 6 символов" autocomplete="new-password" required>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label" for="password2">Повторите пароль</label>
+                    <input type="password" class="form-control" id="password2" name="password2"
+                           autocomplete="new-password" required>
+                </div>
 
-        <form method="POST">
-          <div class="mb-3">
-            <label class="form-label">Логин</label>
-            <input type="text" name="username" class="form-control"
-                   placeholder="Ваш никнейм" required autofocus>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">E-mail</label>
-            <input type="email" name="email" class="form-control"
-                   placeholder="example@mail.ru" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Пароль</label>
-            <input type="password" name="password" class="form-control"
-                   placeholder="Минимум 6 символов" required>
-          </div>
-          <div class="mb-4">
-            <label class="form-label">Повторите пароль</label>
-            <input type="password" name="confirm" class="form-control"
-                   placeholder="Повторите пароль" required>
-          </div>
-          <button type="submit" class="btn btn-primary w-100">Зарегистрироваться</button>
-        </form>
+                <button type="submit" class="btn btn-gc w-100">Зарегистрироваться</button>
+            </form>
 
-        <hr>
-        <p class="text-center mb-0">
-          Уже есть аккаунт? <a href="{{ url_for('main.login') }}">Войти</a>
-        </p>
-      </div>
+            <p class="text-muted mt-4 mb-0 text-center" style="font-size:.9rem">
+                Уже есть аккаунт? <a href="{{ url_for('main.login') }}">Войти</a>
+            </p>
+        </div>
     </div>
-  </div>
 </div>
 {% endblock %}

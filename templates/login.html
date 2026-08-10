@@ -1,43 +1,35 @@
-{% extends 'base.html' %}
-{% block title %}Вход{% endblock %}
-
+{% extends "base.html" %}
+{% block title %}Вход — ГикКульт{% endblock %}
 {% block content %}
-<div class="row justify-content-center mt-5">
-  <div class="col-md-5">
-    <div class="card shadow-sm">
-      <div class="card-body p-4">
-        <h4 class="card-title mb-4 text-center">Вход</h4>
+<div class="gc-auth">
+    <div class="card">
+        <div class="card-body">
+            <h1>Вход</h1>
+            <p class="gc-sub">Рады видеть вас снова</p>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% for cat, msg in messages %}
-            <div class="alert alert-{{ cat }}">{{ msg }}</div>
-          {% endfor %}
-        {% endwith %}
+            <form method="POST" action="{{ url_for('main.login', next=request.args.get('next')) }}" novalidate>
+                <div class="mb-3">
+                    <label class="form-label" for="username">Логин</label>
+                    <input type="text" class="form-control" id="username" name="username"
+                           value="{{ username or '' }}" autocomplete="username" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="password">Пароль</label>
+                    <input type="password" class="form-control" id="password" name="password"
+                           autocomplete="current-password" required>
+                </div>
+                <div class="form-check mb-4">
+                    <input class="form-check-input" type="checkbox" id="remember" name="remember" checked>
+                    <label class="form-check-label" for="remember">Запомнить меня</label>
+                </div>
 
-        <form method="POST">
-          <div class="mb-3">
-            <label class="form-label">Логин</label>
-            <input type="text" name="username" class="form-control"
-                   placeholder="Ваш никнейм" required autofocus>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Пароль</label>
-            <input type="password" name="password" class="form-control"
-                   placeholder="Пароль" required>
-          </div>
-          <div class="mb-4 form-check">
-            <input type="checkbox" class="form-check-input" name="remember" id="remember">
-            <label class="form-check-label" for="remember">Запомнить меня</label>
-          </div>
-          <button type="submit" class="btn btn-primary w-100">Войти</button>
-        </form>
+                <button type="submit" class="btn btn-gc w-100">Войти</button>
+            </form>
 
-        <hr>
-        <p class="text-center mb-0">
-          Нет аккаунта? <a href="{{ url_for('main.register') }}">Зарегистрироваться</a>
-        </p>
-      </div>
+            <p class="text-muted mt-4 mb-0 text-center" style="font-size:.9rem">
+                Нет аккаунта? <a href="{{ url_for('main.register') }}">Зарегистрироваться</a>
+            </p>
+        </div>
     </div>
-  </div>
 </div>
 {% endblock %}

@@ -1,11 +1,14 @@
 from datetime import datetime, timezone
-from flask_sqlalchemy import SQLAlchemy
+
 from flask_login import UserMixin
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import check_password_hash, generate_password_hash
 
 db = SQLAlchemy()
 
 STATUSES = ['Склад ЧелГУ', 'НашЭтаж', 'Хобби-Студия', 'На руках']
+STATUS_TAKEN = 'На руках'
+
 
 def utc_now():
     return datetime.now(timezone.utc)
@@ -14,50 +17,76 @@ def utc_now():
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
 
-    id            = db.Column(db.Integer, primary_key=True)
-    username      = db.Column(db.String(100), unique=True, nullable=False)
-    email         = db.Column(db.String(150), unique=True, nullable=False)
-    password_hash = db.Column(db.String(256), nullable=False)
-    created_at    = db.Column(db.DateTime, default=utc_now)
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    full_name = db.Column(db.String(120), nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    is_admin = db.Column(db.Boolean, nullable=False, default=False)
+    created_at = db.Column(db.DateTime, default=utc_now)
 
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
+    bookings = db.relationship('Booking', back_populates='user', lazy=True)
 
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
+    def set_password(self, raw_password):
+        self.password_hash = generate_password_hash(raw_password)
 
-    def __repr__(self):
-        return f'<User {self.username}>'
+    def check_password(self, raw_password):
+        return check_password_hash(self.password_hash, raw_password)
+
+    @property
+    def display_name(self):
+        return self.full_name or self.username
 
 
 class Item(db.Model):
     __tablename__ = 'items'
 
-    id          = db.Column(db.Integer, primary_key=True)
-    name        = db.Column(db.String(200), nullable=False)
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
-    status      = db.Column(db.String(50), nullable=False, default='Склад ЧелГУ')
-    holder      = db.Column(db.String(100))   # имя пользователя, кто взял
-    holder_id   = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-    photo       = db.Column(db.String(200))
-    created_at  = db.Column(db.DateTime, default=utc_now)
-    updated_at  = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
+    status = db.Column(db.String(50), nullable=False, default='Склад ЧелГУ')
+    holder = db.Column(db.String(100))
+    holder_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    qr_filename = db.Column(db.String(100))
+    created_at = db.Column(db.DateTime, default=utc_now)
+    updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 
-    holder_user = db.relationship('User', backref='borrowed_items')
+    holder_user = db.relationship('User', foreign_keys=[holder_user_id])
 
-    def __repr__(self):
-        return f'<Item {self.name}>'
+    @property
+    def is_taken(self):
+        return self.status == STATUS_TAKEN
+
+    def taken_by(self, user):
+        return bool(user and user.is_authenticated and self.holder_user_id == user.id)
 
 
 class ItemHistory(db.Model):
     __tablename__ = 'item_history'
 
-    id         = db.Column(db.Integer, primary_key=True)
-    item_id    = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
+    id = db.Column(db.Integer, primary_key=True)
+    item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     old_status = db.Column(db.String(50))
     new_status = db.Column(db.String(50), nullable=False)
-    note       = db.Column(db.String(300))
-    changed_by = db.Column(db.String(100))   # username кто изменил
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     changed_at = db.Column(db.DateTime, default=utc_now)
 
     item = db.relationship('Item', backref=db.backref('history', lazy=True))
+    user = db.relationship('User', foreign_keys=[user_id])
+
+
+class Booking(db.Model):
+    __tablename__ = 'bookings'
+
+    id = db.Column(db.Integer, primary_key=True)
+    item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    prev_status = db.Column(db.String(50))
+    taken_at = db.Column(db.DateTime, default=utc_now)
+    returned_at = db.Column(db.DateTime, nullable=True)
+
+    item = db.relationship('Item', backref=db.backref('bookings', lazy=True))
+    user = db.relationship('User', back_populates='bookings')
+
+    @property
+    def is_active(self):
+        return self.returned_at is None
