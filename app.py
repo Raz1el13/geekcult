@@ -21,17 +21,44 @@ def load_user(user_id):
 
 def _auto_migrate():
     inspector = inspect(db.engine)
+
     wanted = {
-        'items': {'holder_user_id': 'INTEGER'},
-        'item_history': {'user_id': 'INTEGER'},
+        'users': {
+            'full_name': 'VARCHAR(120)',
+        },
+        'items': {
+            'holder_user_id': 'INTEGER',
+        },
+        'item_history': {
+            'user_id': 'INTEGER',
+        },
     }
+
     for table, columns in wanted.items():
         if not inspector.has_table(table):
             continue
+
         existing = {c['name'] for c in inspector.get_columns(table)}
+
         for column, ddl_type in columns.items():
             if column not in existing:
-                db.session.execute(text('ALTER TABLE ' + table + ' ADD COLUMN ' + column + ' ' + ddl_type))
+                db.session.execute(
+                    text(
+                        f'ALTER TABLE {table} '
+                        f'ADD COLUMN {column} {ddl_type}'
+                    )
+                )
+
+                # Для существующих пользователей заполняем новое поле.
+                if table == 'users' and column == 'full_name':
+                    db.session.execute(
+                        text(
+                            'UPDATE users '
+                            'SET full_name = username '
+                            'WHERE full_name IS NULL'
+                        )
+                    )
+
     db.session.commit()
 
 
