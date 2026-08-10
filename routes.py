@@ -8,9 +8,10 @@ from werkzeug.utils import secure_filename
 from functools import wraps
 from flask import (Blueprint, render_template, request, redirect,
                    url_for, flash, send_file, Response)
+from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy import func
 
-from models import db, Item, ItemHistory, STATUSES, utc_now
+from models import db, Item, ItemHistory, User, STATUSES, utc_now
 
 main = Blueprint('main', __name__)
 
@@ -21,6 +22,7 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+# ── HTTP Basic Auth для /admin ─────────────────────────────────────────────────
 def require_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -49,6 +51,149 @@ def send_telegram(text: str):
         pass
 
 
+# ── Регистрация ────────────────────────────────────────────────────────────────
+@main.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index'))
+
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        email    = request.form.get('email', '').strip().lower()
+        password = request.form.get('password', '')
+        confirm  = request.form.get('confirm', '')
+
+        error = None
+        if not username or not email or not password:
+            error = 'Заполните все поля'
+        elif password != confirm:
+            error = 'Пароли не совпадают'
+        elif len(password) < 6:
+            error = 'Пароль должен быть не менее 6 символов'
+        elif User.query.filter_by(username=username).first():
+            error = 'Такой логин уже занят'
+        elif User.query.filter_by(email=email).first():
+            error = 'Этот e-mail уже зарегистрирован'
+
+        if error:
+            flash(error, 'danger')
+            return render_template('register.html')
+
+        user = User(username=username, email=email)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+
+        login_user(user)
+        flash('Добро пожаловать! Вы успешно зарегистрировались.', 'success')
+        return redirect(url_for('main.index'))
+
+    return render_template('register.html')
+
+
+# ── Вход ───────────────────────────────────────────────────────────────────────
+@main.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index'))
+
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+
+        user = User.query.filter_by(username=username).first()
+        if not user or not user.check_password(password):
+            flash('Неверный логин или пароль', 'danger')
+            return render_template('login.html')
+
+        login_user(user, remember=request.form.get('remember') == 'on')
+        flash(f'Привет, {user.username}!', 'success')
+        next_page = request.args.get('next')
+        return redirect(next_page or url_for('main.index'))
+
+    return render_template('login.html')
+
+
+# ── Выход ──────────────────────────────────────────────────────────────────────
+@main.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('Вы вышли из аккаунта', 'info')
+    return redirect(url_for('main.index'))
+
+
+# ── Забронировать вещь ─────────────────────────────────────────────────────────
+@main.route('/item/<int:item_id>/book', methods=['POST'])
+@login_required
+def book_item(item_id):
+    item = db.get_or_404(Item, item_id)
+
+    if item.status == 'На руках':
+        flash('Эта вещь уже занята', 'warning')
+        return redirect(url_for('main.item_detail', item_id=item_id))
+
+    old_status = item.status
+
+    db.session.add(ItemHistory(
+        item_id    = item.id,
+        old_status = old_status,
+        new_status = 'На руках',
+        note       = f'Забронировано пользователем {current_user.username}',
+        changed_by = current_user.username,
+    ))
+
+    item.status    = 'На руках'
+    item.holder    = current_user.username
+    item.holder_id = current_user.id
+    item.updated_at = utc_now()
+    db.session.commit()
+
+    send_telegram(
+        f'📦 <b>{item.name}</b>\n{old_status} → <b>На руках</b>\n'
+        f'👤 Забронировал: {current_user.username}'
+    )
+    flash(f'Вы забронировали «{item.name}»!', 'success')
+    return redirect(url_for('main.item_detail', item_id=item_id))
+
+
+# ── Вернуть вещь ───────────────────────────────────────────────────────────────
+@main.route('/item/<int:item_id>/return', methods=['POST'])
+@login_required
+def return_item(item_id):
+    item = db.get_or_404(Item, item_id)
+
+    # Вернуть может только тот, кто взял
+    if item.holder_id != current_user.id:
+        flash('Вы не можете вернуть чужую вещь', 'danger')
+        return redirect(url_for('main.item_detail', item_id=item_id))
+
+    old_status = item.status
+    new_status = 'Склад ЧелГУ'
+
+    db.session.add(ItemHistory(
+        item_id    = item.id,
+        old_status = old_status,
+        new_status = new_status,
+        note       = f'Возвращено пользователем {current_user.username}',
+        changed_by = current_user.username,
+    ))
+
+    item.status     = new_status
+    item.holder     = None
+    item.holder_id  = None
+    item.updated_at = utc_now()
+    db.session.commit()
+
+    send_telegram(
+        f'📦 <b>{item.name}</b>\n{old_status} → <b>{new_status}</b>\n'
+        f'👤 Вернул: {current_user.username}'
+    )
+    flash(f'Вы вернули «{item.name}»', 'info')
+    return redirect(url_for('main.item_detail', item_id=item_id))
+
+
+# ── Главная ────────────────────────────────────────────────────────────────────
 @main.route('/')
 def index():
     status_filter = request.args.get('status')
@@ -168,7 +313,6 @@ def add_item():
     db.session.add(item)
     db.session.commit()
 
-    # Загрузка фото предмета
     file = request.files.get('photo')
     if file and file.filename and allowed_file(file.filename):
         os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -200,7 +344,6 @@ def update_item(item_id):
 
     note = request.form.get('note', '').strip() or None
 
-    # Обновить фото если загружено
     file = request.files.get('photo')
     if file and file.filename and allowed_file(file.filename):
         os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -211,13 +354,15 @@ def update_item(item_id):
 
     if old_status != new_status or item.holder != new_holder:
         db.session.add(ItemHistory(
-            item_id=item.id,
-            old_status=old_status,
-            new_status=new_status,
-            note=note,
+            item_id    = item.id,
+            old_status = old_status,
+            new_status = new_status,
+            note       = note,
+            changed_by = 'admin',
         ))
         item.status     = new_status
         item.holder     = new_holder
+        item.holder_id  = None   # при ручном изменении через админку сбрасываем привязку
         item.updated_at = utc_now()
         db.session.commit()
 
@@ -238,7 +383,6 @@ def delete_item(item_id):
     item = db.get_or_404(Item, item_id)
     name = item.name
 
-    # Удаляем файл фото если есть
     if item.photo:
         photo_path = os.path.join(UPLOAD_FOLDER, item.photo)
         if os.path.exists(photo_path):

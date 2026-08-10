@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}Регистрация{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+  <div class="col-md-5">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h4 class="card-title mb-4 text-center">Регистрация</h4>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% for cat, msg in messages %}
+            <div class="alert alert-{{ cat }}">{{ msg }}</div>
+          {% endfor %}
+        {% endwith %}
+
+        <form method="POST">
+          <div class="mb-3">
+            <label class="form-label">Логин</label>
+            <input type="text" name="username" class="form-control"
+                   placeholder="Ваш никнейм" required autofocus>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">E-mail</label>
+            <input type="email" name="email" class="form-control"
+                   placeholder="example@mail.ru" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Пароль</label>
+            <input type="password" name="password" class="form-control"
+                   placeholder="Минимум 6 символов" required>
+          </div>
+          <div class="mb-4">
+            <label class="form-label">Повторите пароль</label>
+            <input type="password" name="confirm" class="form-control"
+                   placeholder="Повторите пароль" required>
+          </div>
+          <button type="submit" class="btn btn-primary w-100">Зарегистрироваться</button>
+        </form>
+
+        <hr>
+        <p class="text-center mb-0">
+          Уже есть аккаунт? <a href="{{ url_for('main.login') }}">Войти</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
