@@ -1,0 +1,587 @@
+﻿===== app.py =====
+from flask import Flask
+
+from config import Config
+from models import db
+from routes import main
+
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object(Config)
+
+    db.init_app(app)
+    app.register_blueprint(main)
+
+    # Создаём таблицы при первом запуске
+    with app.app_context():
+        db.create_all()
+
+    return app
+
+if __name__ == '__main__':
+    app = create_app()
+    app.run(host='0.0.0.0', debug=True)
+
+===== config.py =====
+import os
+from dotenv import load_dotenv
+
+load_dotenv()  # загружает переменные из .env
+
+class Config:
+    SECRET_KEY = os.getenv('SECRET_KEY', 'dev-key')
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL')
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+===== models.py =====
+from datetime import datetime, timezone
+from flask_sqlalchemy import SQLAlchemy
+
+db = SQLAlchemy()
+
+# 4 статуса по ТЗ
+STATUSES = ['Склад ЧелГУ', 'НашЭтаж', 'Хобби-Студия', 'На руках']
+
+def utc_now():
+    return datetime.now(timezone.utc)
+
+class Item(db.Model):
+    __tablename__ = 'items'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    status = db.Column(db.String(50), nullable=False, default='Склад ЧелГУ')
+    holder = db.Column(db.String(100))  # у кого (если "На руках")
+    qr_filename = db.Column(db.String(100))
+    created_at = db.Column(db.DateTime, default=utc_now)
+    updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
+
+    def __repr__(self):
+        return f'<Item {self.name}>'
+
+class ItemHistory(db.Model):
+    __tablename__ = 'item_history'
+
+    id = db.Column(db.Integer, primary_key=True)
+    item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
+    old_status = db.Column(db.String(50))
+    new_status = db.Column(db.String(50), nullable=False)
+    changed_at = db.Column(db.DateTime, default=utc_now)
+
+    item = db.relationship('Item', backref=db.backref('history', lazy=True))
+
+===== regen_qr.py =====
+from app import create_app
+from models import db, Item
+from utils import generate_qr
+
+app = create_app()
+
+with app.app_context():
+    for item in Item.query.all():
+        item.qr_filename = generate_qr(item.id)
+    db.session.commit()
+    print("✅ QR-коды перегенерированы в правильную папку!")
+
+===== requirements.txt =====
+flask
+flask-sqlalchemy
+psycopg2-binary
+qrcode[pil]
+python-dotenv
+
+===== routes.py =====
+import io
+import qrcode
+
+from datetime import datetime, timezone
+
+from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file
+from sqlalchemy import func
+
+from models import db, Item, ItemHistory, STATUSES, utc_now
+from utils import generate_qr
+
+# пароль для админки
+import os
+from functools import wraps
+from flask import request, Response
+
+main = Blueprint('main', __name__)
+
+# декоратор защиты
+def require_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        login = os.getenv('ADMIN_LOGIN', 'admin')
+        password = os.getenv('ADMIN_PASSWORD', 'geekcult2026')
+        if not auth or not (auth.username == login and auth.password == password):
+            return Response('Нужна авторизация', 401,
+                            {'WWW-Authenticate': 'Basic realm="Admin"'})
+        return f(*args, **kwargs)
+    return decorated
+
+# Главная страница — список предметов
+@main.route('/')
+def index():
+    status_filter = request.args.get('status')
+    if status_filter:
+        items = Item.query.filter_by(status=status_filter)\
+            .order_by(Item.updated_at.desc()).all()
+    else:
+        items = Item.query.order_by(Item.updated_at.desc()).all()
+    return render_template('index.html', items=items, statuses=STATUSES)
+
+# Страница отдельного предмета
+@main.route('/item/<int:item_id>')
+def item_detail(item_id):
+    item = db.get_or_404(Item, item_id)
+    return render_template('item.html', item=item)
+
+# Статистика
+@main.route('/stats')
+def stats():
+    status_counts = db.session.query(
+        Item.status, func.count(Item.id)
+    ).group_by(Item.status).all()
+
+    recent_moves = ItemHistory.query\
+        .order_by(ItemHistory.changed_at.desc()).limit(10).all()
+
+    return render_template('stats.html',
+                           status_counts=status_counts,
+                           recent_moves=recent_moves)
+
+# Админ-панель
+@main.route('/admin')
+@require_auth
+def admin():
+    items = Item.query.order_by(Item.updated_at.desc()).all()
+    return render_template('admin.html', items=items, statuses=STATUSES)
+
+# Добавление предмета
+@main.route('/admin/add', methods=['POST'])
+@require_auth
+def add_item():
+    name = request.form.get('name', '').strip()
+    if not name:
+        flash('Название не может быть пустым')
+        return redirect(url_for('main.admin'))
+
+    status = request.form.get('status', 'Склад ЧелГУ')
+    holder = request.form.get('holder', '').strip() or None
+    if status != 'На руках':
+        holder = None
+
+    item = Item(name=name,
+                description=request.form.get('description', ''),
+                status=status,
+                holder=holder)
+    db.session.add(item)
+    db.session.commit()
+
+    # Генерируем QR после сохранения (нужен id)
+    item.qr_filename = generate_qr(item.id)
+    db.session.commit()
+
+    flash(f'Предмет "{name}" добавлен')
+    return redirect(url_for('main.admin'))
+
+# Изменение статуса предмета
+@main.route('/admin/update/<int:item_id>', methods=['POST'])
+@require_auth
+def update_item(item_id):
+    item = db.get_or_404(Item, item_id)
+
+    old_status = item.status
+    new_status = request.form.get('status', old_status)
+    new_holder = request.form.get('holder', '').strip() or None
+    if new_status != 'На руках':
+        new_holder = None
+
+    if old_status != new_status or item.holder != new_holder:
+        # Записываем историю перемещения
+        db.session.add(ItemHistory(item_id=item.id,
+                                   old_status=old_status,
+                                   new_status=new_status))
+
+        item.status = new_status
+        item.holder = new_holder
+        item.updated_at = utc_now()
+        db.session.commit()
+
+        flash(f'Статус "{item.name}": {old_status} → {new_status}')
+    else:
+        flash('Изменений нет')
+
+    return redirect(url_for('main.admin'))
+
+# QR-код генерируется на лету, адрес подставляется автоматически
+@main.route('/qr/<int:item_id>')
+def qr_image(item_id):
+    db.get_or_404(Item, item_id)
+    url = url_for('main.item_detail', item_id=item_id, _external=True)
+
+    qr = qrcode.QRCode(version=1, box_size=10, border=4)
+    qr.add_data(url)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    buf = io.BytesIO()
+    img.save(buf, format='PNG')
+    buf.seek(0)
+    return send_file(buf, mimetype='image/png')
+
+===== seed.py =====
+from app import create_app
+from models import db, Item
+from utils import generate_qr
+
+app = create_app()
+
+with app.app_context():
+    # Очищаем и пересоздаём таблицы
+    db.drop_all()
+    db.create_all()
+
+    items = [
+        Item(name='Проектор Epson', description='Проектор для презентаций и мероприятий', status='Склад ЧелГУ'),
+        Item(name='Ноутбук ASUS', description='Ноутбук для работы на мероприятиях', status='НашЭтаж'),
+        Item(name='Микрофон беспроводной', description='Микрофон для выступлений', status='На руках', holder='Иванов И.И.'),
+        Item(name='Колонка JBL', description='Портативная колонка', status='Хобби-Студия'),
+        Item(name='Настольная игра Манчкин', description='Игра для клубных вечеров', status='НашЭтаж'),
+    ]
+
+    db.session.add_all(items)
+    db.session.commit()
+
+    # Генерируем QR-коды для всех предметов
+    for item in Item.query.all():
+        item.qr_filename = generate_qr(item.id)
+    db.session.commit()
+
+    print("✅ Тестовые данные добавлены, QR-коды сгенерированы!")
+
+===== test_db.py =====
+import psycopg2
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+try:
+    conn = psycopg2.connect(os.getenv('DATABASE_URL'))
+    print("✅ Подключение к PostgreSQL успешно!")
+    conn.close()
+except Exception as e:
+    print(f"❌ Ошибка подключения: {e}")
+
+===== utils.py =====
+import os
+import qrcode
+
+# Папка проекта (где лежит utils.py) — всегда правильно
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def generate_qr(item_id, base_url='http://localhost:5000'):
+    """Генерирует QR-код со ссылкой на страницу предмета"""
+    url = f"{base_url}/item/{item_id}"
+
+    qr = qrcode.QRCode(version=1, box_size=10, border=4)
+    qr.add_data(url)
+    qr.make(fit=True)
+
+    filename = f"item_{item_id}.png"
+    folder = os.path.join(BASE_DIR, 'static', 'qr_codes')
+    os.makedirs(folder, exist_ok=True)
+
+    img = qr.make_image(fill_color="black", back_color="white")
+    img.save(os.path.join(folder, filename))
+
+    return filename
+
+===== style.css =====
+
+===== admin.html =====
+{% extends "base.html" %}
+{% block content %}
+<h1 class="mb-4">🔧 Админ-панель</h1>
+
+<div class="card mb-4">
+    <div class="card-header">Добавить новый предмет</div>
+    <div class="card-body">
+        <form method="POST" action="/admin/add">
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <input type="text" name="name" class="form-control" placeholder="Название" required>
+                </div>
+                <div class="col-md-4">
+                    <textarea name="description" class="form-control" placeholder="Описание" rows="1"></textarea>
+                </div>
+                <div class="col-md-2">
+                    <select name="status" class="form-select">
+                        {% for status in statuses %}
+                        <option>{{ status }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="text" name="holder" class="form-control" placeholder="У кого (если на руках)">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary mt-3">Добавить</button>
+        </form>
+    </div>
+</div>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Название</th>
+            <th>Статус</th>
+            <th>У кого</th>
+            <th>Обновлено</th>
+            <th>Действия</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in items %}
+        <tr>
+            <td>{{ item.id }}</td>
+            <td>{{ item.name }}</td>
+            <td>{{ item.status }}</td>
+            <td>{{ item.holder or '—' }}</td>
+            <td>{{ item.updated_at.strftime('%d.%m.%Y %H:%M') if item.updated_at else '—' }}</td>
+            <td>
+                <a href="/item/{{ item.id }}" class="btn btn-sm btn-info">QR</a>
+                <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editModal{{ item.id }}">
+                    Изменить
+                </button>
+            </td>
+        </tr>
+
+        <div class="modal fade" id="editModal{{ item.id }}" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Изменить: {{ item.name }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form method="POST" action="/admin/update/{{ item.id }}">
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">Новый статус</label>
+                                <select name="status" class="form-select">
+                                    {% for status in statuses %}
+                                    <option {% if item.status == status %}selected{% endif %}>{{ status }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">У кого (если на руках)</label>
+                                <input type="text" name="holder" class="form-control" value="{{ item.holder or '' }}">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                            <button type="submit" class="btn btn-primary">Сохранить</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
+
+===== base.html =====
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ГикКульт{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">🎮 ГикКульт</a>
+            <div>
+                <a href="/" class="btn btn-outline-light btn-sm">Список</a>
+                <a href="/stats" class="btn btn-outline-light btn-sm">Статистика</a>
+                <a href="/admin" class="btn btn-outline-light btn-sm">Админка</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-success alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+
+===== index.html =====
+{% extends "base.html" %}
+{% block content %}
+<h1 class="mb-4">Имущество Гик-Культа</h1>
+
+<div class="mb-4">
+    <a href="/" class="btn btn-outline-secondary btn-sm">Все</a>
+    {% for status in statuses %}
+        <a href="/?status={{ status }}" class="btn btn-outline-primary btn-sm">{{ status }}</a>
+    {% endfor %}
+</div>
+
+<div class="row">
+    {% for item in items %}
+    <div class="col-md-4 mb-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">{{ item.name }}</h5>
+                <p class="card-text text-muted">{{ (item.description or '')[:80] }}</p>
+
+                {% if item.status == 'На руках' %}
+                    <span class="badge bg-warning text-dark">{{ item.status }}: {{ item.holder }}</span>
+                {% elif item.status == 'Склад ЧелГУ' %}
+                    <span class="badge bg-primary">{{ item.status }}</span>
+                {% elif item.status == 'НашЭтаж' %}
+                    <span class="badge bg-success">{{ item.status }}</span>
+                {% else %}
+                    <span class="badge bg-info text-dark">{{ item.status }}</span>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <a href="/item/{{ item.id }}" class="btn btn-sm btn-primary">Подробнее</a>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="alert alert-info">Пока нет ни одного предмета. Добавь первый в админке!</div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+===== item.html =====
+{% extends "base.html" %}
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <h1>{{ item.name }}</h1>
+        <p class="text-muted">{{ item.description }}</p>
+
+        <div class="alert alert-info">
+            <h5>📍 Текущее местоположение</h5>
+            <p class="mb-0"><strong>{{ item.status }}</strong></p>
+            {% if item.holder %}
+                <p class="mb-0">Находится у: <strong>{{ item.holder }}</strong></p>
+            {% endif %}
+        </div>
+
+        <p><small>Создано: {{ item.created_at.strftime('%d.%m.%Y %H:%M') }}</small></p>
+        <p><small>Обновлено: {{ item.updated_at.strftime('%d.%m.%Y %H:%M') }}</small></p>
+
+        <a href="/" class="btn btn-secondary">← Назад</a>
+    </div>
+
+    <div class="col-md-6 text-center">
+        <h3>QR-код предмета</h3>
+        <img src="{{ url_for('main.qr_image', item_id=item.id) }}"
+            class="img-fluid border rounded p-2 bg-white"
+            style="max-width: 300px;">
+        <p class="text-muted mt-2">Отсканируйте для быстрого доступа</p>
+    </div>
+</div>
+
+<div class="mt-5">
+    <h4>📋 История перемещений</h4>
+    {% if item.history %}
+    <table class="table table-sm table-striped">
+        <thead>
+            <tr>
+                <th>Дата</th>
+                <th>Откуда</th>
+                <th>Куда</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for h in item.history|sort(attribute='changed_at', reverse=True) %}
+            <tr>
+                <td>{{ h.changed_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                <td>{{ h.old_status }}</td>
+                <td><strong>{{ h.new_status }}</strong></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">Перемещений ещё не было</p>
+    {% endif %}
+</div>
+{% endblock %}
+
+===== stats.html =====
+{% extends "base.html" %}
+{% block content %}
+<h1 class="mb-4">📊 Статистика</h1>
+
+<div class="row mb-4">
+    {% for status, count in status_counts %}
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h2>{{ count }}</h2>
+                <p class="mb-0">{{ status }}</p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<h3>Последние перемещения</h3>
+{% if recent_moves %}
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Предмет</th>
+            <th>Откуда</th>
+            <th>Куда</th>
+            <th>Когда</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for h in recent_moves %}
+        <tr>
+            <td>{{ h.item.name }}</td>
+            <td>{{ h.old_status }}</td>
+            <td><strong>{{ h.new_status }}</strong></td>
+            <td>{{ h.changed_at.strftime('%d.%m.%Y %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p class="text-muted">Перемещений ещё не было</p>
+{% endif %}
+{% endblock %}
+

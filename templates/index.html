@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Имущество — ГикКульт{% endblock %}
+
+{% set STATUS_IMG = {
+    'НашЭтаж':      'loc_nashetazh.jpg',
+    'Склад ЧелГУ':  'loc_sklad.jpg',
+    'Хобби-Студия': 'loc_hobby.jpg',
+    'На руках':     'loc_narukah.jpg'
+} %}
+
+{% block content %}
+
+<div class="flex between wrap mb-3" style="gap:12px">
+    <h1 class="page-title" style="margin-bottom:0">Имущество</h1>
+    <div style="position:relative">
+        <input type="text" id="search-input" class="input" placeholder="Поиск…"
+               value="{{ request.args.get('q', '') }}"
+               style="width:220px;padding-right:36px"
+               oninput="liveSearch(this.value)">
+        <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none">🔍</span>
+    </div>
+</div>
+
+<div class="chips mb-3">
+    <a href="/" class="chip {% if not request.args.get('status') %}active{% endif %}">Все</a>
+    {% for status in statuses %}
+        <a href="/?status={{ status }}" class="chip {% if request.args.get('status') == status %}active{% endif %}">
+            {{ status }}
+        </a>
+    {% endfor %}
+</div>
+
+<div class="grid" id="items-grid">
+    {% for item in items %}
+    <div class="card card-item item-card" data-name="{{ item.name|lower }}" style="padding:0;overflow:hidden">
+
+        <!-- Фото на всю ширину, cover чтобы без пустых мест -->
+        <div style="height:200px;overflow:hidden">
+            {% set img = STATUS_IMG.get(item.status) %}
+            {% if img %}
+            <img src="{{ url_for('static', filename='img/' + img) }}"
+                 style="width:100%;height:100%;object-fit:cover;display:block">
+            {% endif %}
+        </div>
+
+        <!-- Статус под фото -->
+        <div style="padding:10px 16px 0">
+            {% if item.status == 'На руках' %}
+                <span class="badge badge-yellow">👤 {{ item.status }}</span>
+            {% elif item.status == 'Склад ЧелГУ' %}
+                <span class="badge badge-black">🏛 {{ item.status }}</span>
+            {% elif item.status == 'НашЭтаж' %}
+                <span class="badge badge-green">🏢 {{ item.status }}</span>
+            {% else %}
+                <span class="badge badge-blue">🎨 {{ item.status }}</span>
+            {% endif %}
+        </div>
+
+        <!-- Контент -->
+        <div style="padding:10px 16px 16px;display:flex;flex-direction:column;gap:8px">
+            <span class="bold" style="font-size:15px;line-height:1.3">{{ item.name }}</span>
+
+            {% if item.description %}
+                <p class="muted" style="line-height:1.5;font-size:13px">
+                    {{ item.description[:80] }}{% if item.description|length > 80 %}…{% endif %}
+                </p>
+            {% endif %}
+
+            {% if item.holder %}
+                <p style="font-size:13px">👤 <span class="muted">У кого:</span> <strong>{{ item.holder }}</strong></p>
+            {% endif %}
+
+            <div class="flex between" style="align-items:center;margin-top:4px">
+                <span class="muted" style="font-size:12px">{{ item.updated_at.strftime('%d.%m.%Y') if item.updated_at else '' }}</span>
+                <a href="/item/{{ item.id }}" class="btn btn-primary btn-sm">Открыть →</a>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card" style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted)">
+        <p style="font-size:32px;margin-bottom:12px">📦</p>
+        <p style="font-size:16px;font-weight:600;color:var(--black);margin-bottom:4px">Ничего не найдено</p>
+        <p>Попробуй изменить фильтр или добавь предмет в <a href="/admin" style="color:var(--black)">админке</a></p>
+    </div>
+    {% endfor %}
+</div>
+
+<div id="no-results" style="display:none">
+    <div class="card" style="text-align:center;padding:48px;color:var(--muted)">
+        <p style="font-size:32px;margin-bottom:12px">🔍</p>
+        <p style="font-size:16px;font-weight:600;color:var(--black);margin-bottom:4px">Ничего не найдено</p>
+        <p>Попробуй другой запрос</p>
+    </div>
+</div>
+
+<script>
+function liveSearch(q) {
+    const query = q.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    let visible = 0;
+    cards.forEach(card => {
+        const name = card.dataset.name || '';
+        const show = name.includes(query);
+        card.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+    document.getElementById('no-results').style.display = visible === 0 ? 'block' : 'none';
+}
+const initial = document.getElementById('search-input').value;
+if (initial) liveSearch(initial);
+</script>
+
+{% endblock %}

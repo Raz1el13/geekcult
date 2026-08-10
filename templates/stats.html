@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Статистика — ГикКульт{% endblock %}
+{% block content %}
+
+<h1 class="page-title">Статистика</h1>
+
+<div class="grid mb-3" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr));margin-bottom:24px">
+    {% for status, count in status_counts %}
+    <div class="card" style="display:flex;flex-direction:column;gap:6px">
+        <span style="font-size:36px;font-weight:800;letter-spacing:-1px">{{ count }}</span>
+        <span class="muted" style="font-size:13px;font-weight:500">
+            {% if status == 'На руках' %}👤
+            {% elif status == 'Склад ЧелГУ' %}🏛
+            {% elif status == 'НашЭтаж' %}🏢
+            {% else %}🎨
+            {% endif %}
+            {{ status }}
+        </span>
+        <div style="height:3px;border-radius:2px;margin-top:6px;
+            background:{% if status == 'На руках' %}#FFDD2D
+                       {% elif status == 'НашЭтаж' %}#34C759
+                       {% elif status == 'Склад ЧелГУ' %}#000000
+                       {% else %}#007AFF{% endif %}">
+        </div>
+    </div>
+    {% else %}
+    <div class="card" style="grid-column:1/-1;text-align:center;padding:32px;color:var(--muted)">
+        Данных пока нет
+    </div>
+    {% endfor %}
+</div>
+
+<div class="card">
+    <p style="font-size:16px;font-weight:700;margin-bottom:16px">Последние перемещения</p>
+
+    {% if recent_moves %}
+    <table class="tbl">
+        <thead>
+            <tr>
+                <th>Предмет</th>
+                <th>Откуда</th>
+                <th>Куда</th>
+                <th>Когда</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for h in recent_moves %}
+            <tr>
+                <td><a href="/item/{{ h.item_id }}" style="color:var(--black);font-weight:600;text-decoration:none">{{ h.item.name }}</a></td>
+                <td class="muted">{{ h.old_status or '—' }}</td>
+                <td>
+                    {% if h.new_status == 'На руках' %}
+                        <span class="badge badge-yellow">{{ h.new_status }}</span>
+                    {% elif h.new_status == 'Склад ЧелГУ' %}
+                        <span class="badge badge-black">{{ h.new_status }}</span>
+                    {% elif h.new_status == 'НашЭтаж' %}
+                        <span class="badge badge-green">{{ h.new_status }}</span>
+                    {% else %}
+                        <span class="badge badge-blue">{{ h.new_status }}</span>
+                    {% endif %}
+                </td>
+                <td class="muted">{{ h.changed_at.strftime('%d.%m.%Y %H:%M') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="muted" style="text-align:center;padding:24px 0">Перемещений ещё не было</p>
+    {% endif %}
+</div>
+
+{% endblock %}

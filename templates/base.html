@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ГикКульт{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --black:   #000000;
+            --yellow:  #FFDD2D;
+            --white:   #FFFFFF;
+            --bg:      #F6F7F8;
+            --muted:   #9299A2;
+            --border:  #E5E9EF;
+            --card-r:  16px;
+            --btn-r:   12px;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--black);
+            min-height: 100vh;
+        }
+
+        /* ── NAV ── */
+        nav {
+            background: var(--black);
+            padding: 0 24px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .nav-brand {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--yellow);
+            text-decoration: none;
+            letter-spacing: -0.5px;
+        }
+        .nav-links { display: flex; gap: 8px; }
+        .nav-link {
+            color: var(--white);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 7px 14px;
+            border-radius: var(--btn-r);
+            transition: background .15s;
+        }
+        .nav-link:hover { background: rgba(255,255,255,.1); }
+        .nav-link.active { background: var(--yellow); color: var(--black); }
+
+        /* ── LAYOUT ── */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+
+        /* ── FLASH ── */
+        .flash {
+            background: var(--yellow);
+            color: var(--black);
+            padding: 12px 18px;
+            border-radius: var(--btn-r);
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 24px;
+        }
+
+        /* ── CARD ── */
+        .card {
+            background: var(--white);
+            border-radius: var(--card-r);
+            padding: 24px;
+            border: 1px solid var(--border);
+        }
+        .card-sm { padding: 16px 20px; }
+
+        /* ── BADGE (статус) ── */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-yellow  { background: var(--yellow);  color: var(--black); }
+        .badge-black   { background: var(--black);   color: var(--white); }
+        .badge-green   { background: #D8F5E6;         color: #117B4B; }
+        .badge-blue    { background: #E0EDFF;         color: #1A5FD6; }
+
+        /* ── BUTTONS ── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 18px;
+            border-radius: var(--btn-r);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            text-decoration: none;
+            transition: opacity .15s, transform .1s;
+        }
+        .btn:active { transform: scale(.97); }
+        .btn-primary   { background: var(--yellow); color: var(--black); }
+        .btn-primary:hover { opacity: .88; }
+        .btn-dark      { background: var(--black);  color: var(--white); }
+        .btn-dark:hover { opacity: .8; }
+        .btn-ghost {
+            background: transparent;
+            color: var(--black);
+            border: 1.5px solid var(--border);
+        }
+        .btn-ghost:hover { background: var(--bg); }
+        .btn-danger    { background: #FFE5E5; color: #C0392B; }
+        .btn-danger:hover { background: #ffd0d0; }
+        .btn-sm { padding: 6px 12px; font-size: 13px; border-radius: 9px; }
+
+        /* ── INPUT / SELECT ── */
+        .input, .select, .textarea {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--btn-r);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            background: var(--white);
+            color: var(--black);
+            outline: none;
+            transition: border-color .15s;
+        }
+        .input:focus, .select:focus, .textarea:focus {
+            border-color: var(--black);
+        }
+        .textarea { resize: vertical; min-height: 60px; }
+        label { font-size: 13px; font-weight: 500; color: var(--muted); display: block; margin-bottom: 5px; }
+
+        /* ── TABLE ── */
+        .tbl { width: 100%; border-collapse: collapse; }
+        .tbl th {
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            padding: 0 16px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .tbl td {
+            padding: 14px 16px;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+        .tbl tr:last-child td { border-bottom: none; }
+        .tbl tr:hover td { background: var(--bg); }
+
+        /* ── MODAL ── */
+        .modal-overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,.4);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-box {
+            background: var(--white);
+            border-radius: var(--card-r);
+            padding: 28px;
+            width: 100%;
+            max-width: 440px;
+            animation: pop .2s ease;
+        }
+        @keyframes pop {
+            from { opacity: 0; transform: scale(.95); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+        .modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+
+        /* ── UTILS ── */
+        .row    { display: flex; gap: 16px; flex-wrap: wrap; }
+        .col    { flex: 1; min-width: 200px; }
+        .mt-1   { margin-top: 8px; }
+        .mt-2   { margin-top: 16px; }
+        .mt-3   { margin-top: 24px; }
+        .mt-4   { margin-top: 32px; }
+        .mb-1   { margin-bottom: 8px; }
+        .mb-2   { margin-bottom: 16px; }
+        .mb-3   { margin-bottom: 24px; }
+        .gap-1  { gap: 8px; }
+        .gap-2  { gap: 16px; }
+        .flex   { display: flex; align-items: center; }
+        .between{ justify-content: space-between; }
+        .wrap   { flex-wrap: wrap; }
+        .muted  { color: var(--muted); font-size: 13px; }
+        .bold   { font-weight: 700; }
+        .page-title { font-size: 28px; font-weight: 800; margin-bottom: 24px; letter-spacing: -0.5px; }
+
+        /* ── FILTER CHIPS ── */
+        .chip {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
+            background: var(--white);
+            color: var(--black);
+            border: 1.5px solid var(--border);
+            transition: all .15s;
+        }
+        .chip:hover, .chip.active { background: var(--black); color: var(--white); border-color: var(--black); }
+
+        /* ── GRID CARDS ── */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+
+        @media (max-width: 640px) {
+            .container { padding: 20px 16px; }
+            .page-title { font-size: 22px; }
+            .row { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <a class="nav-brand" href="/">ГикКульт</a>
+    <div class="nav-links">
+        <a href="/"      class="nav-link {% if request.path == '/' %}active{% endif %}">Имущество</a>
+        <a href="/stats" class="nav-link {% if request.path == '/stats' %}active{% endif %}">Статистика</a>
+        <a href="/admin" class="nav-link {% if request.path == '/admin' %}active{% endif %}">Админка</a>
+    </div>
+</nav>
+
+<div class="container">
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                <div class="flash">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+</div>
+
+</body>
+</html>

@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}{{ item.name }} — ГикКульт{% endblock %}
+
+{% set STATUS_IMG = {
+    'НашЭтаж':      'loc_nashetazh.jpg',
+    'Склад ЧелГУ':  'loc_sklad.jpg',
+    'Хобби-Студия': 'loc_hobby.jpg',
+    'На руках':     'loc_narukah.jpg'
+} %}
+
+{% block content %}
+
+<a href="/" class="btn btn-ghost btn-sm" style="margin-bottom:16px">← Назад</a>
+
+<!-- Верхний ряд: инфо слева, QR справа -->
+<div class="item-top-row">
+
+    <!-- Левая колонка — инфо -->
+    <div style="flex:1;min-width:0">
+        <div class="card">
+            <p class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Предмет</p>
+            <h1 style="font-size:24px;font-weight:800;letter-spacing:-.5px;margin-bottom:10px">{{ item.name }}</h1>
+
+            {% if item.description %}
+                <p style="font-size:14px;line-height:1.6;color:#444;margin-bottom:16px">{{ item.description }}</p>
+            {% endif %}
+
+            <div style="background:var(--bg);border-radius:12px;padding:14px 16px;margin-bottom:16px">
+                <p class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Текущее местоположение</p>
+                {% if item.status == 'На руках' %}
+                    <span class="badge badge-yellow" style="font-size:13px;padding:6px 14px">👤 {{ item.status }}</span>
+                {% elif item.status == 'Склад ЧелГУ' %}
+                    <span class="badge badge-black" style="font-size:13px;padding:6px 14px">🏛 {{ item.status }}</span>
+                {% elif item.status == 'НашЭтаж' %}
+                    <span class="badge badge-green" style="font-size:13px;padding:6px 14px">🏢 {{ item.status }}</span>
+                {% else %}
+                    <span class="badge badge-blue" style="font-size:13px;padding:6px 14px">🎨 {{ item.status }}</span>
+                {% endif %}
+                {% if item.holder %}
+                    <span style="font-size:13px;margin-left:10px">у <strong>{{ item.holder }}</strong></span>
+                {% endif %}
+            </div>
+
+            <div style="display:flex;gap:24px">
+                <div>
+                    <p class="muted" style="font-size:12px">Добавлено</p>
+                    <p style="font-size:13px;font-weight:500">{{ item.created_at.strftime('%d.%m.%Y') }}</p>
+                </div>
+                <div>
+                    <p class="muted" style="font-size:12px">Обновлено</p>
+                    <p style="font-size:13px;font-weight:500">{{ item.updated_at.strftime('%d.%m.%Y %H:%M') }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Правая колонка — QR -->
+    <div class="item-qr-col">
+        <div class="card" style="text-align:center;flex:1;display:flex;flex-direction:column;justify-content:center">
+            <p class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">QR-код</p>
+            <img src="{{ url_for('main.qr_image', item_id=item.id) }}"
+                 style="width:180px;height:180px;border-radius:12px;border:1px solid var(--border)">
+            <p class="muted" style="font-size:12px;margin-top:10px;margin-bottom:14px;line-height:1.4">
+                Сканируй для быстрого доступа
+            </p>
+            <a href="{{ url_for('main.qr_download', item_id=item.id) }}"
+               class="btn btn-primary" style="width:100%;justify-content:center">
+                ⬇ Скачать QR
+            </a>
+        </div>
+    </div>
+
+</div>
+
+<!-- Фото предмета — под верхним рядом -->
+{% if item.photo %}
+<div class="card" style="margin-top:16px;padding:20px;text-align:center">
+    <p class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px">Фото предмета</p>
+    <img src="{{ url_for('static', filename='photos/' + item.photo) }}"
+         style="max-width:100%;max-height:420px;object-fit:contain;border-radius:12px;display:inline-block">
+</div>
+{% endif %}
+
+<!-- История -->
+<div class="card" style="margin-top:16px">
+    <p style="font-size:16px;font-weight:700;margin-bottom:16px">История перемещений</p>
+    {% if item.history %}
+    <table class="tbl">
+        <thead>
+            <tr><th>Дата</th><th>Откуда</th><th>Куда</th><th>Заметка</th></tr>
+        </thead>
+        <tbody>
+            {% for h in item.history|sort(attribute='changed_at', reverse=True) %}
+            <tr>
+                <td class="muted">{{ h.changed_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                <td>{{ h.old_status or '—' }}</td>
+                <td>
+                    {% set img = STATUS_IMG.get(h.new_status) %}
+                    {% if img %}
+                    <img src="{{ url_for('static', filename='img/' + img) }}"
+                         style="width:20px;height:20px;border-radius:4px;object-fit:cover;vertical-align:middle;margin-right:5px">
+                    {% endif %}
+                    <strong>{{ h.new_status }}</strong>
+                </td>
+                <td class="muted">{{ h.note or '—' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="muted" style="text-align:center;padding:24px 0">Перемещений ещё не было</p>
+    {% endif %}
+</div>
+
+
+<style>
+.item-top-row { display:flex; gap:16px; align-items:stretch; }
+.item-qr-col  { width:260px; flex-shrink:0; display:flex; }
+.item-qr-col .card { flex:1; display:flex; flex-direction:column; justify-content:center; }
+@media (max-width:640px) {
+    .item-top-row { flex-direction:column; }
+    .item-qr-col  { width:100%; }
+}
+</style>
+{% endblock %}

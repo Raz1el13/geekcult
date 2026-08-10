@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% block title %}Админка — ГикКульт{% endblock %}
+{% block content %}
+
+<div class="flex between wrap mb-3" style="margin-bottom:24px;gap:12px">
+    <h1 class="page-title" style="margin-bottom:0">Админ-панель</h1>
+    <div class="flex gap-1">
+        <a href="{{ url_for('main.qr_print') }}" class="btn btn-ghost btn-sm">🖨 Печать QR</a>
+        <a href="{{ url_for('main.export_csv') }}" class="btn btn-ghost btn-sm">📥 Экспорт CSV</a>
+    </div>
+</div>
+
+<!-- Добавить предмет -->
+<div class="card" style="margin-bottom:24px">
+    <p style="font-size:16px;font-weight:700;margin-bottom:16px">Добавить предмет</p>
+    <form method="POST" action="/admin/add" enctype="multipart/form-data">
+        <div class="form-row">
+            <div class="form-col">
+                <label>Название *</label>
+                <input type="text" name="name" class="input" placeholder="Например: Проектор Epson" required>
+            </div>
+            <div class="form-col">
+                <label>Описание</label>
+                <input type="text" name="description" class="input" placeholder="Краткое описание">
+            </div>
+            <div style="min-width:160px;max-width:200px">
+                <label>Статус</label>
+                <select name="status" class="select" style="width:100%">
+                    {% for status in statuses %}
+                    <option>{{ status }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="min-width:160px;max-width:200px">
+                <label>У кого (если на руках)</label>
+                <input type="text" name="holder" class="input" placeholder="Иванов И.И.">
+            </div>
+            <div style="min-width:160px;max-width:200px">
+                <label>Фото предмета</label>
+                <input type="file" name="photo" accept="image/*"
+                       style="width:100%;font-size:13px;padding:8px 0;color:var(--muted)">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top:14px">+ Добавить</button>
+    </form>
+</div>
+
+<!-- Таблица -->
+<div class="card">
+    <p style="font-size:16px;font-weight:700;margin-bottom:16px">
+        Все предметы <span class="muted" style="font-weight:400;font-size:14px">({{ items|length }})</span>
+    </p>
+
+    {% if items %}
+    <table class="tbl">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Фото</th>
+                <th>Название</th>
+                <th>Статус</th>
+                <th>У кого</th>
+                <th>Обновлено</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td class="muted">#{{ item.id }}</td>
+                <td>
+                    {% if item.photo %}
+                    <img src="{{ url_for('static', filename='photos/' + item.photo) }}"
+                         style="width:40px;height:40px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">
+                    {% else %}
+                    <div style="width:40px;height:40px;border-radius:8px;background:var(--bg);border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:16px">📷</div>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="/item/{{ item.id }}" style="color:var(--black);font-weight:600;text-decoration:none">
+                        {{ item.name }}
+                    </a>
+                </td>
+                <td>
+                    {% if item.status == 'На руках' %}
+                        <span class="badge badge-yellow">{{ item.status }}</span>
+                    {% elif item.status == 'Склад ЧелГУ' %}
+                        <span class="badge badge-black">{{ item.status }}</span>
+                    {% elif item.status == 'НашЭтаж' %}
+                        <span class="badge badge-green">{{ item.status }}</span>
+                    {% else %}
+                        <span class="badge badge-blue">{{ item.status }}</span>
+                    {% endif %}
+                </td>
+                <td>{{ item.holder or '—' }}</td>
+                <td class="muted">{{ item.updated_at.strftime('%d.%m.%Y %H:%M') if item.updated_at else '—' }}</td>
+                <td>
+                    <div class="flex gap-1">
+                        <a href="{{ url_for('main.qr_download', item_id=item.id) }}"
+                           class="btn btn-ghost btn-sm">QR</a>
+                        <button class="btn btn-ghost btn-sm" onclick="openModal('edit-{{ item.id }}')">Изменить</button>
+                        <form method="POST" action="/admin/delete/{{ item.id }}"
+                              onsubmit="return confirm('Удалить «{{ item.name }}»?')" style="display:inline">
+                            <button type="submit" class="btn btn-danger btn-sm">Удалить</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="muted" style="text-align:center;padding:32px 0">Предметов пока нет — добавь первый выше</p>
+    {% endif %}
+</div>
+
+<!-- Модалки вне таблицы -->
+{% for item in items %}
+<div class="modal-overlay" id="edit-{{ item.id }}" onclick="closeOnBg(event,'edit-{{ item.id }}')">
+    <div class="modal-box">
+        <p class="modal-title">{{ item.name }}</p>
+        <form method="POST" action="/admin/update/{{ item.id }}" enctype="multipart/form-data">
+            <div style="margin-bottom:14px">
+                <label>Новый статус</label>
+                <select name="status" class="select" style="width:100%">
+                    {% for status in statuses %}
+                    <option {% if item.status == status %}selected{% endif %}>{{ status }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="margin-bottom:14px">
+                <label>У кого (если на руках)</label>
+                <input type="text" name="holder" class="input" style="width:100%"
+                       value="{{ item.holder or '' }}" placeholder="Иванов И.И.">
+            </div>
+            <div style="margin-bottom:14px">
+                <label>Заметка <span class="muted" style="font-weight:400">(необязательно)</span></label>
+                <input type="text" name="note" class="input" style="width:100%"
+                       placeholder="Например: взяли на мероприятие">
+            </div>
+            <div>
+                <label>Обновить фото предмета</label>
+                {% if item.photo %}
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+                    <img src="{{ url_for('static', filename='photos/' + item.photo) }}"
+                         style="width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">
+                    <span class="muted" style="font-size:12px">Текущее фото</span>
+                </div>
+                {% endif %}
+                <input type="file" name="photo" accept="image/*"
+                       style="width:100%;font-size:13px;padding:8px 0;color:var(--muted)">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('edit-{{ item.id }}')">Отмена</button>
+                <button type="submit" class="btn btn-primary">Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
+
+<script>
+function openModal(id) {
+    document.getElementById(id).classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+    document.body.style.overflow = '';
+}
+function closeOnBg(e, id) {
+    if (e.target === e.currentTarget) closeModal(id);
+}
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+        document.body.style.overflow = '';
+    }
+});
+</script>
+
+{% endblock %}
