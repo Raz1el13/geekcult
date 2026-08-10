@@ -175,28 +175,28 @@ def logout():
 
 @main.route('/')
 def index():
-    # Поисковая строка
     search_query = request.args.get('q', '').strip()
-
-    # Фильтр по статусу / местонахождению
     status_filter = request.args.get('status', '').strip()
 
     query = Item.query
 
-    # Поиск по названию, описанию, статусу и держателю
+    # Поиск по частям слов
     if search_query:
-        search_pattern = f'%{search_query}%'
+        search_words = search_query.lower().split()
 
-        query = query.filter(
-            or_(
-                Item.name.ilike(search_pattern),
-                Item.description.ilike(search_pattern),
-                Item.status.ilike(search_pattern),
-                Item.holder.ilike(search_pattern),
+        for word in search_words:
+            search_pattern = f'%{word}%'
+
+            query = query.filter(
+                or_(
+                    Item.name.ilike(search_pattern),
+                    Item.description.ilike(search_pattern),
+                    Item.status.ilike(search_pattern),
+                    Item.holder.ilike(search_pattern),
+                )
             )
-        )
 
-    # Фильтр по конкретному статусу
+    # Фильтр по статусу
     if status_filter:
         query = query.filter(
             Item.status == status_filter
