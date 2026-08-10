@@ -25,6 +25,7 @@ def _auto_migrate():
     wanted = {
         'users': {
             'full_name': 'VARCHAR(120)',
+            'is_admin': 'BOOLEAN',
         },
         'items': {
             'holder_user_id': 'INTEGER',
@@ -49,13 +50,21 @@ def _auto_migrate():
                     )
                 )
 
-                # Для существующих пользователей заполняем новое поле.
                 if table == 'users' and column == 'full_name':
                     db.session.execute(
                         text(
                             'UPDATE users '
                             'SET full_name = username '
                             'WHERE full_name IS NULL'
+                        )
+                    )
+
+                if table == 'users' and column == 'is_admin':
+                    db.session.execute(
+                        text(
+                            'UPDATE users '
+                            'SET is_admin = FALSE '
+                            'WHERE is_admin IS NULL'
                         )
                     )
 
