@@ -4,29 +4,26 @@
 
 <div class="gc-home-header mb-4">
     <div>
-        <div class="gc-eyebrow">GEekCult • Имущество</div>
+        <div class="gc-eyebrow">GEEKCULT • ИМУЩЕСТВО</div>
 
         <h1 class="mb-2">
             Все предметы
         </h1>
 
         <p class="text-muted mb-0">
-            Найдите нужную вещь и посмотрите её текущее местонахождение.
+            Найдите нужную вещь по названию, описанию или местонахождению.
         </p>
     </div>
 </div>
 
 
-<!-- ПОИСК -->
+<!-- ЖИВОЙ ПОИСК -->
+
 <div class="gc-search-card mb-4">
 
-    <form
-        method="GET"
-        action="{{ url_for('main.index') }}"
-        class="row g-2"
-    >
+    <div class="row g-2">
 
-        <div class="col-md-8">
+        <div class="col-md-9">
 
             <div class="gc-search-wrapper">
 
@@ -36,21 +33,30 @@
 
                 <input
                     type="search"
-                    name="q"
-                    value="{{ search_query or '' }}"
+                    id="liveSearch"
                     class="form-control gc-search-input"
-                    placeholder="Поиск по названию, описанию, местонахождению..."
+                    placeholder="Начните вводить название, место или описание..."
                     autocomplete="off"
                 >
+
+                <button
+                    type="button"
+                    id="clearSearch"
+                    class="gc-search-clear"
+                    aria-label="Очистить поиск"
+                    style="display: none;"
+                >
+                    ×
+                </button>
 
             </div>
 
         </div>
 
-        <div class="col-md-2">
+        <div class="col-md-3">
 
             <select
-                name="status"
+                id="statusFilter"
                 class="form-select gc-search-select"
             >
 
@@ -60,12 +66,7 @@
 
                 {% for status in statuses %}
 
-                    <option
-                        value="{{ status }}"
-                        {% if active_status == status %}
-                            selected
-                        {% endif %}
-                    >
+                    <option value="{{ status }}">
                         {{ status }}
                     </option>
 
@@ -75,23 +76,19 @@
 
         </div>
 
-        <div class="col-md-2">
+    </div>
 
-            <button
-                type="submit"
-                class="btn btn-gc-primary w-100"
-            >
-                Найти
-            </button>
-
-        </div>
-
-    </form>
+    <div
+        id="searchInfo"
+        class="small text-muted mt-3"
+    >
+        Показаны все предметы
+    </div>
 
 </div>
 
 
-<!-- АКТИВНЫЕ ФИЛЬТРЫ -->
+<!-- СТАТУСЫ -->
 
 <div class="d-flex flex-wrap align-items-center gap-2 mb-4">
 
@@ -99,63 +96,47 @@
         Местонахождение:
     </span>
 
-    <a
-        href="{{ url_for('main.index', q=search_query or '') }}"
-        class="gc-filter {% if not active_status %}active{% endif %}"
+    <button
+        type="button"
+        class="gc-filter active status-button"
+        data-status=""
     >
         Все
-    </a>
+    </button>
 
     {% for status in statuses %}
 
-        <a
-            href="{{ url_for(
-                'main.index',
-                q=search_query or '',
-                status=status
-            ) }}"
-            class="gc-filter {% if active_status == status %}active{% endif %}"
+        <button
+            type="button"
+            class="gc-filter status-button"
+            data-status="{{ status }}"
         >
             {{ status }}
-        </a>
+        </button>
 
     {% endfor %}
 
 </div>
 
 
-<!-- РЕЗУЛЬТАТЫ -->
+<!-- КАРТОЧКИ -->
 
-{% if search_query %}
-
-    <div class="mb-3">
-
-        <span class="text-muted">
-            Результаты поиска для:
-        </span>
-
-        <strong>
-            «{{ search_query }}»
-        </strong>
-
-        <span class="text-muted">
-            — {{ items|length }}
-        </span>
-
-    </div>
-
-{% endif %}
-
-
-<div class="row g-4">
+<div
+    id="itemsGrid"
+    class="row g-4"
+>
 
     {% for item in items %}
 
-        <div class="col-sm-6 col-lg-4">
+        <div
+            class="col-sm-6 col-lg-4 item-column"
+            data-name="{{ item.name|lower }}"
+            data-description="{{ (item.description or '')|lower }}"
+            data-status="{{ item.status|lower }}"
+            data-holder="{{ (item.holder or '')|lower }}"
+        >
 
             <div class="card h-100 gc-item-card">
-
-                <!-- Верх карточки -->
 
                 <div class="gc-item-card-top">
 
@@ -192,8 +173,6 @@
                 </div>
 
 
-                <!-- Информация -->
-
                 <div class="card-body">
 
                     <h5 class="card-title gc-item-title">
@@ -218,8 +197,6 @@
 
                     {% endif %}
 
-
-                    <!-- Местонахождение -->
 
                     <div class="gc-location">
 
@@ -261,8 +238,6 @@
                 </div>
 
 
-                <!-- Кнопки -->
-
                 <div class="card-footer gc-card-footer">
 
                     <a
@@ -283,51 +258,315 @@
 
         </div>
 
-    {% else %}
-
-        <div class="col-12">
-
-            <div class="gc-empty text-center">
-
-                <div class="gc-empty-icon">
-                    🔎
-                </div>
-
-                {% if search_query %}
-
-                    <h4>
-                        Ничего не найдено
-                    </h4>
-
-                    <p class="text-muted">
-                        По запросу «{{ search_query }}» предметов нет.
-                    </p>
-
-                    <a
-                        href="{{ url_for('main.index') }}"
-                        class="btn btn-gc-primary"
-                    >
-                        Сбросить поиск
-                    </a>
-
-                {% else %}
-
-                    <h4>
-                        Пока нет предметов
-                    </h4>
-
-                    <p class="text-muted">
-                        Добавьте первый предмет через админку.
-                    </p>
-
-                {% endif %}
-
-            </div>
-
-        </div>
-
     {% endfor %}
 
 </div>
+
+
+<!-- НИЧЕГО НЕ НАЙДЕНО -->
+
+<div
+    id="noResults"
+    class="gc-empty text-center"
+    style="display: none;"
+>
+
+    <div class="gc-empty-icon">
+        🔎
+    </div>
+
+    <h4>
+        Ничего не найдено
+    </h4>
+
+    <p class="text-muted">
+        Попробуйте изменить поисковый запрос или фильтр.
+    </p>
+
+    <button
+        type="button"
+        id="resetSearch"
+        class="btn btn-gc-primary"
+    >
+        Сбросить поиск
+    </button>
+
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const searchInput = document.getElementById('liveSearch');
+    const statusFilter = document.getElementById('statusFilter');
+    const clearButton = document.getElementById('clearSearch');
+    const resetButton = document.getElementById('resetSearch');
+    const searchInfo = document.getElementById('searchInfo');
+    const noResults = document.getElementById('noResults');
+
+    const itemColumns = Array.from(
+        document.querySelectorAll('.item-column')
+    );
+
+    const statusButtons = Array.from(
+        document.querySelectorAll('.status-button')
+    );
+
+
+    function normalizeText(text) {
+        return (text || '')
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, ' ');
+    }
+
+
+    function applySearch() {
+
+        const searchText = normalizeText(
+            searchInput.value
+        );
+
+        const selectedStatus = normalizeText(
+            statusFilter.value
+        );
+
+        /*
+         * Разбиваем запрос на отдельные слова.
+         *
+         * Например:
+         * "ноут лен"
+         *
+         * превратится в:
+         * ["ноут", "лен"]
+         */
+        const words = searchText
+            .split(' ')
+            .filter(word => word.length > 0);
+
+
+        let visibleCount = 0;
+
+
+        itemColumns.forEach(function (column) {
+
+            const name = normalizeText(
+                column.dataset.name
+            );
+
+            const description = normalizeText(
+                column.dataset.description
+            );
+
+            const status = normalizeText(
+                column.dataset.status
+            );
+
+            const holder = normalizeText(
+                column.dataset.holder
+            );
+
+
+            /*
+             * Объединяем всё, по чему можно искать.
+             */
+            const searchableText = [
+                name,
+                description,
+                status,
+                holder
+            ].join(' ');
+
+
+            /*
+             * Каждое введённое слово должно
+             * находиться внутри данных карточки.
+             *
+             * "ноут" найдёт "ноутбук"
+             * "склад" найдёт "Склад ЧелГУ"
+             */
+            const matchesSearch = words.every(function (word) {
+                return searchableText.includes(word);
+            });
+
+
+            const matchesStatus =
+                !selectedStatus ||
+                status === selectedStatus;
+
+
+            const visible =
+                matchesSearch &&
+                matchesStatus;
+
+
+            column.style.display =
+                visible ? '' : 'none';
+
+
+            if (visible) {
+                visibleCount++;
+            }
+
+        });
+
+
+        /*
+         * Кнопка очистки.
+         */
+        clearButton.style.display =
+            searchText.length > 0
+                ? 'block'
+                : 'none';
+
+
+        /*
+         * Информация над результатами.
+         */
+        if (!searchText && !selectedStatus) {
+
+            searchInfo.textContent =
+                'Показаны все предметы';
+
+        } else {
+
+            searchInfo.textContent =
+                'Найдено предметов: ' + visibleCount;
+        }
+
+
+        /*
+         * Экран "Ничего не найдено".
+         */
+        noResults.style.display =
+            visibleCount === 0
+                ? 'block'
+                : 'none';
+
+    }
+
+
+    /*
+     * Поиск происходит СРАЗУ при вводе.
+     */
+    searchInput.addEventListener(
+        'input',
+        applySearch
+    );
+
+
+    /*
+     * Фильтр через select.
+     */
+    statusFilter.addEventListener(
+        'change',
+        function () {
+
+            /*
+             * Синхронизируем кнопки статусов.
+             */
+            statusButtons.forEach(function (button) {
+
+                button.classList.toggle(
+                    'active',
+                    normalizeText(button.dataset.status) ===
+                    normalizeText(statusFilter.value)
+                );
+
+            });
+
+            applySearch();
+
+        }
+    );
+
+
+    /*
+     * Кнопки статусов.
+     */
+    statusButtons.forEach(function (button) {
+
+        button.addEventListener(
+            'click',
+            function () {
+
+                const status =
+                    button.dataset.status || '';
+
+                statusFilter.value = status;
+
+
+                statusButtons.forEach(function (btn) {
+
+                    btn.classList.remove('active');
+
+                });
+
+                button.classList.add('active');
+
+                applySearch();
+
+            }
+        );
+
+    });
+
+
+    /*
+     * Очистить поиск.
+     */
+    clearButton.addEventListener(
+        'click',
+        function () {
+
+            searchInput.value = '';
+
+            searchInput.focus();
+
+            applySearch();
+
+        }
+    );
+
+
+    /*
+     * Полностью сбросить фильтры.
+     */
+    resetButton.addEventListener(
+        'click',
+        function () {
+
+            searchInput.value = '';
+
+            statusFilter.value = '';
+
+            statusButtons.forEach(function (button) {
+
+                button.classList.remove('active');
+
+            });
+
+            const allButton =
+                document.querySelector(
+                    '.status-button[data-status=""]'
+                );
+
+            if (allButton) {
+                allButton.classList.add('active');
+            }
+
+            applySearch();
+
+        }
+    );
+
+
+    /*
+     * Первоначальное состояние.
+     */
+    applySearch();
+
+});
+</script>
 
 {% endblock %}
