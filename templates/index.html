@@ -1,47 +1,333 @@
 {% extends "base.html" %}
+
 {% block content %}
-<div class="d-flex flex-wrap align-items-end justify-content-between mb-3">
+
+<div class="gc-home-header mb-4">
     <div>
-        <h1 class="mb-1">Имущество ГикКульта</h1>
-        <p class="text-muted mb-0">Нажмите «Забронировать» — вещь сразу уйдёт в статус «На руках».</p>
+        <div class="gc-eyebrow">GEekCult • Имущество</div>
+
+        <h1 class="mb-2">
+            Все предметы
+        </h1>
+
+        <p class="text-muted mb-0">
+            Найдите нужную вещь и посмотрите её текущее местонахождение.
+        </p>
     </div>
 </div>
 
-<div class="mb-4">
-    <a href="{{ url_for('main.index') }}" class="gc-filter {% if not active_status %}active{% endif %}">Все</a>
-    {% for status in statuses %}
-        <a href="{{ url_for('main.index', status=status) }}" class="gc-filter {% if active_status == status %}active{% endif %}">{{ status }}</a>
-    {% endfor %}
-</div>
 
-<div class="row">
-    {% for item in items %}
-    <div class="col-md-4 mb-3">
-        <div class="card h-100 gc-item-card">
-            <div class="card-body">
-                <h5 class="card-title">{{ item.name }}</h5>
-                <p class="card-text text-muted">{{ (item.description or '')[:80] }}</p>
+<!-- ПОИСК -->
+<div class="gc-search-card mb-4">
 
-                {% if item.status == 'На руках' %}
-                    <span class="gc-badge gc-badge-taken">На руках: {{ item.holder or '—' }}</span>
-                {% elif item.status == 'Склад ЧелГУ' %}
-                    <span class="gc-badge gc-badge-warehouse">{{ item.status }}</span>
-                {% elif item.status == 'НашЭтаж' %}
-                    <span class="gc-badge gc-badge-floor">{{ item.status }}</span>
-                {% else %}
-                    <span class="gc-badge gc-badge-studio">{{ item.status }}</span>
-                {% endif %}
+    <form
+        method="GET"
+        action="{{ url_for('main.index') }}"
+        class="row g-2"
+    >
+
+        <div class="col-md-8">
+
+            <div class="gc-search-wrapper">
+
+                <span class="gc-search-icon">
+                    🔎
+                </span>
+
+                <input
+                    type="search"
+                    name="q"
+                    value="{{ search_query or '' }}"
+                    class="form-control gc-search-input"
+                    placeholder="Поиск по названию, описанию, местонахождению..."
+                    autocomplete="off"
+                >
+
             </div>
-            <div class="card-footer">
-                <a href="{{ url_for('main.item_detail', item_id=item.id) }}" class="btn btn-gc-ghost btn-sm">Подробнее</a>
-                {% include "_item_actions.html" %}
-            </div>
+
         </div>
-    </div>
-    {% else %}
-    <div class="col-12">
-        <div class="gc-empty">Пока нет ни одного предмета. Добавьте первый в админке.</div>
-    </div>
-    {% endfor %}
+
+        <div class="col-md-2">
+
+            <select
+                name="status"
+                class="form-select gc-search-select"
+            >
+
+                <option value="">
+                    Все статусы
+                </option>
+
+                {% for status in statuses %}
+
+                    <option
+                        value="{{ status }}"
+                        {% if active_status == status %}
+                            selected
+                        {% endif %}
+                    >
+                        {{ status }}
+                    </option>
+
+                {% endfor %}
+
+            </select>
+
+        </div>
+
+        <div class="col-md-2">
+
+            <button
+                type="submit"
+                class="btn btn-gc-primary w-100"
+            >
+                Найти
+            </button>
+
+        </div>
+
+    </form>
+
 </div>
+
+
+<!-- АКТИВНЫЕ ФИЛЬТРЫ -->
+
+<div class="d-flex flex-wrap align-items-center gap-2 mb-4">
+
+    <span class="text-muted small me-1">
+        Местонахождение:
+    </span>
+
+    <a
+        href="{{ url_for('main.index', q=search_query or '') }}"
+        class="gc-filter {% if not active_status %}active{% endif %}"
+    >
+        Все
+    </a>
+
+    {% for status in statuses %}
+
+        <a
+            href="{{ url_for(
+                'main.index',
+                q=search_query or '',
+                status=status
+            ) }}"
+            class="gc-filter {% if active_status == status %}active{% endif %}"
+        >
+            {{ status }}
+        </a>
+
+    {% endfor %}
+
+</div>
+
+
+<!-- РЕЗУЛЬТАТЫ -->
+
+{% if search_query %}
+
+    <div class="mb-3">
+
+        <span class="text-muted">
+            Результаты поиска для:
+        </span>
+
+        <strong>
+            «{{ search_query }}»
+        </strong>
+
+        <span class="text-muted">
+            — {{ items|length }}
+        </span>
+
+    </div>
+
+{% endif %}
+
+
+<div class="row g-4">
+
+    {% for item in items %}
+
+        <div class="col-sm-6 col-lg-4">
+
+            <div class="card h-100 gc-item-card">
+
+                <!-- Верх карточки -->
+
+                <div class="gc-item-card-top">
+
+                    <div class="gc-item-icon">
+                        📦
+                    </div>
+
+                    {% if item.status == 'На руках' %}
+
+                        <span class="gc-badge gc-badge-taken">
+                            На руках
+                        </span>
+
+                    {% elif item.status == 'Склад ЧелГУ' %}
+
+                        <span class="gc-badge gc-badge-warehouse">
+                            Склад ЧелГУ
+                        </span>
+
+                    {% elif item.status == 'НашЭтаж' %}
+
+                        <span class="gc-badge gc-badge-floor">
+                            НашЭтаж
+                        </span>
+
+                    {% else %}
+
+                        <span class="gc-badge gc-badge-studio">
+                            {{ item.status }}
+                        </span>
+
+                    {% endif %}
+
+                </div>
+
+
+                <!-- Информация -->
+
+                <div class="card-body">
+
+                    <h5 class="card-title gc-item-title">
+                        {{ item.name }}
+                    </h5>
+
+                    {% if item.description %}
+
+                        <p class="card-text text-muted gc-item-description">
+                            {{ item.description[:120] }}
+
+                            {% if item.description|length > 120 %}
+                                …
+                            {% endif %}
+                        </p>
+
+                    {% else %}
+
+                        <p class="card-text text-muted gc-item-description">
+                            Описание отсутствует
+                        </p>
+
+                    {% endif %}
+
+
+                    <!-- Местонахождение -->
+
+                    <div class="gc-location">
+
+                        <div class="gc-location-icon">
+                            📍
+                        </div>
+
+                        <div>
+
+                            <div class="gc-location-label">
+                                Местонахождение
+                            </div>
+
+                            <div class="gc-location-value">
+                                {{ item.status }}
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    {% if item.holder %}
+
+                        <div class="gc-holder">
+
+                            <span>
+                                👤
+                            </span>
+
+                            <span>
+                                {{ item.holder }}
+                            </span>
+
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+
+                <!-- Кнопки -->
+
+                <div class="card-footer gc-card-footer">
+
+                    <a
+                        href="{{ url_for(
+                            'main.item_detail',
+                            item_id=item.id
+                        ) }}"
+                        class="btn btn-gc-primary btn-sm"
+                    >
+                        Подробнее
+                    </a>
+
+                    {% include "_item_actions.html" %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+    {% else %}
+
+        <div class="col-12">
+
+            <div class="gc-empty text-center">
+
+                <div class="gc-empty-icon">
+                    🔎
+                </div>
+
+                {% if search_query %}
+
+                    <h4>
+                        Ничего не найдено
+                    </h4>
+
+                    <p class="text-muted">
+                        По запросу «{{ search_query }}» предметов нет.
+                    </p>
+
+                    <a
+                        href="{{ url_for('main.index') }}"
+                        class="btn btn-gc-primary"
+                    >
+                        Сбросить поиск
+                    </a>
+
+                {% else %}
+
+                    <h4>
+                        Пока нет предметов
+                    </h4>
+
+                    <p class="text-muted">
+                        Добавьте первый предмет через админку.
+                    </p>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    {% endfor %}
+
+</div>
+
 {% endblock %}
