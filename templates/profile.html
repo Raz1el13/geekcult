@@ -73,4 +73,39 @@
     {% endif %}
 </div>
 
+<!-- История бронирований -->
+<div class="card" style="margin-top:16px">
+    <p style="font-size:16px;font-weight:700;margin-bottom:16px">
+        История бронирований
+        <span class="muted" style="font-weight:400;font-size:14px">({{ history|length }})</span>
+    </p>
+
+    {% if history %}
+    <table class="tbl">
+        <thead>
+            <tr>
+                <th>Дата</th>
+                <th>Предмет</th>
+                <th>Откуда взято</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for h in history %}
+            <tr>
+                <td class="muted">{{ h.changed_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                <td>
+                    <a href="/item/{{ h.item_id }}" style="color:var(--black);font-weight:600;text-decoration:none">
+                        {{ h.item.name if h.item else '—' }}
+                    </a>
+                </td>
+                <td class="muted">{{ h.old_status or '—' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="muted" style="text-align:center;padding:24px 0">Вы ещё ничего не бронировали</p>
+    {% endif %}
+</div>
+
 {% endblock %}

@@ -126,7 +126,14 @@ def logout():
 @login_required
 def profile():
     my_items = Item.query.filter_by(holder_id=current_user.id).all()
-    return render_template('profile.html', my_items=my_items)
+
+    # История: что брал раньше (записи о взятии этим пользователем)
+    history = ItemHistory.query\
+        .filter_by(user_id=current_user.id, new_status='На руках')\
+        .order_by(ItemHistory.changed_at.desc())\
+        .limit(20).all()
+
+    return render_template('profile.html', my_items=my_items, history=history)
 
 
 # ── Бронирование ──────────────────────────────────────────────────────────────
@@ -222,9 +229,42 @@ def stats():
     status_counts = db.session.query(
         Item.status, func.count(Item.id)
     ).group_by(Item.status).all()
+
     recent_moves = ItemHistory.query\
         .order_by(ItemHistory.changed_at.desc()).limit(10).all()
-    return render_template('stats.html', status_counts=status_counts, recent_moves=recent_moves)
+
+    total_items  = Item.query.count()
+    total_users  = User.query.count()
+    total_moves  = ItemHistory.query.count()
+    on_hands     = Item.query.filter_by(status='На руках').count()
+
+    # Топ-5 самых востребованных предметов
+    top_items = db.session.query(
+        Item.name, func.count(ItemHistory.id).label('cnt')
+    ).join(ItemHistory, ItemHistory.item_id == Item.id)\
+     .filter(ItemHistory.new_status == 'На руках')\
+     .group_by(Item.id, Item.name)\
+     .order_by(func.count(ItemHistory.id).desc())\
+     .limit(5).all()
+
+    # Топ-5 самых активных пользователей
+    top_users = db.session.query(
+        User.name, func.count(ItemHistory.id).label('cnt')
+    ).join(ItemHistory, ItemHistory.user_id == User.id)\
+     .filter(ItemHistory.new_status == 'На руках')\
+     .group_by(User.id, User.name)\
+     .order_by(func.count(ItemHistory.id).desc())\
+     .limit(5).all()
+
+    return render_template('stats.html',
+                           status_counts=status_counts,
+                           recent_moves=recent_moves,
+                           total_items=total_items,
+                           total_users=total_users,
+                           total_moves=total_moves,
+                           on_hands=on_hands,
+                           top_items=top_items,
+                           top_users=top_users)
 
 
 @main.route('/qr/<int:item_id>')

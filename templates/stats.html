@@ -1,35 +1,129 @@
 {% extends "base.html" %}
 {% block title %}Статистика — ГикКульт{% endblock %}
+
+{% set STATUS_COLOR = {
+    'Склад ЧелГУ':  '#000000',
+    'НашЭтаж':      '#22A06B',
+    'Хобби-Студия': '#2B7FFF',
+    'На руках':     '#FFDD2D'
+} %}
+
 {% block content %}
 
 <h1 class="page-title">Статистика</h1>
 
-<div class="grid mb-3" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr));margin-bottom:24px">
-    {% for status, count in status_counts %}
-    <div class="card" style="display:flex;flex-direction:column;gap:6px">
-        <span style="font-size:36px;font-weight:800;letter-spacing:-1px">{{ count }}</span>
-        <span class="muted" style="font-size:13px;font-weight:500">
-            {% if status == 'На руках' %}👤
-            {% elif status == 'Склад ЧелГУ' %}🏛
-            {% elif status == 'НашЭтаж' %}🏢
-            {% else %}🎨
-            {% endif %}
-            {{ status }}
-        </span>
-        <div style="height:3px;border-radius:2px;margin-top:6px;
-            background:{% if status == 'На руках' %}#FFDD2D
-                       {% elif status == 'НашЭтаж' %}#34C759
-                       {% elif status == 'Склад ЧелГУ' %}#000000
-                       {% else %}#007AFF{% endif %}">
+<!-- Ключевые цифры -->
+<div class="grid" style="margin-bottom:24px">
+    <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:20px">
+            <p class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Всего предметов</p>
+            <p style="font-size:34px;font-weight:800;line-height:1">{{ total_items }}</p>
         </div>
+        <div style="height:4px;background:var(--black)"></div>
     </div>
-    {% else %}
-    <div class="card" style="grid-column:1/-1;text-align:center;padding:32px;color:var(--muted)">
-        Данных пока нет
+
+    <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:20px">
+            <p class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">На руках сейчас</p>
+            <p style="font-size:34px;font-weight:800;line-height:1">{{ on_hands }}</p>
+        </div>
+        <div style="height:4px;background:var(--yellow)"></div>
     </div>
-    {% endfor %}
+
+    <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:20px">
+            <p class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Пользователей</p>
+            <p style="font-size:34px;font-weight:800;line-height:1">{{ total_users }}</p>
+        </div>
+        <div style="height:4px;background:#2B7FFF"></div>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:20px">
+            <p class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Всего перемещений</p>
+            <p style="font-size:34px;font-weight:800;line-height:1">{{ total_moves }}</p>
+        </div>
+        <div style="height:4px;background:#22A06B"></div>
+    </div>
 </div>
 
+<!-- Распределение по локациям -->
+<div class="card" style="margin-bottom:24px">
+    <p style="font-size:16px;font-weight:700;margin-bottom:18px">Распределение по локациям</p>
+
+    {% if status_counts and total_items > 0 %}
+        <!-- Полоса -->
+        <div style="display:flex;height:32px;border-radius:10px;overflow:hidden;margin-bottom:18px">
+            {% for status, count in status_counts %}
+            <div style="width:{{ (count / total_items * 100)|round(1) }}%;background:{{ STATUS_COLOR.get(status, '#9299A2') }}"
+                 title="{{ status }}: {{ count }}"></div>
+            {% endfor %}
+        </div>
+
+        <!-- Легенда -->
+        <div style="display:flex;flex-direction:column;gap:12px">
+            {% for status, count in status_counts %}
+            <div class="flex between" style="align-items:center">
+                <div style="display:flex;align-items:center;gap:10px">
+                    <span style="width:12px;height:12px;border-radius:3px;background:{{ STATUS_COLOR.get(status, '#9299A2') }};display:inline-block;flex-shrink:0"></span>
+                    <span style="font-size:14px;font-weight:500">{{ status }}</span>
+                </div>
+                <div style="display:flex;align-items:baseline;gap:8px">
+                    <span style="font-size:15px;font-weight:700">{{ count }}</span>
+                    <span class="muted" style="font-size:13px">{{ (count / total_items * 100)|round|int }}%</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="muted" style="text-align:center;padding:24px 0">Пока нет данных</p>
+    {% endif %}
+</div>
+
+<!-- Топы -->
+<div class="detail-row" style="align-items:flex-start;gap:16px;display:flex;flex-wrap:wrap;margin-bottom:24px">
+
+    <div class="card" style="flex:1;min-width:280px">
+        <p style="font-size:16px;font-weight:700;margin-bottom:16px">Самые востребованные</p>
+        {% if top_items %}
+        <div style="display:flex;flex-direction:column;gap:12px">
+            {% for name, cnt in top_items %}
+            <div class="flex between" style="align-items:center;gap:12px">
+                <div style="display:flex;align-items:center;gap:10px;min-width:0">
+                    <span style="width:22px;height:22px;border-radius:6px;background:var(--yellow);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">{{ loop.index }}</span>
+                    <span style="font-size:14px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ name }}</span>
+                </div>
+                <span class="muted" style="font-size:13px;white-space:nowrap">{{ cnt }} раз</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="muted" style="text-align:center;padding:20px 0">Пока никто ничего не брал</p>
+        {% endif %}
+    </div>
+
+    <div class="card" style="flex:1;min-width:280px">
+        <p style="font-size:16px;font-weight:700;margin-bottom:16px">Самые активные</p>
+        {% if top_users %}
+        <div style="display:flex;flex-direction:column;gap:12px">
+            {% for name, cnt in top_users %}
+            <div class="flex between" style="align-items:center;gap:12px">
+                <div style="display:flex;align-items:center;gap:10px;min-width:0">
+                    <span style="width:22px;height:22px;border-radius:50%;background:var(--black);color:var(--yellow);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">{{ name[0].upper() }}</span>
+                    <span style="font-size:14px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ name }}</span>
+                </div>
+                <span class="muted" style="font-size:13px;white-space:nowrap">{{ cnt }} шт.</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="muted" style="text-align:center;padding:20px 0">Пока нет активности</p>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Последние перемещения -->
 <div class="card">
     <p style="font-size:16px;font-weight:700;margin-bottom:16px">Последние перемещения</p>
 
@@ -37,29 +131,33 @@
     <table class="tbl">
         <thead>
             <tr>
+                <th>Дата</th>
                 <th>Предмет</th>
                 <th>Откуда</th>
                 <th>Куда</th>
-                <th>Когда</th>
             </tr>
         </thead>
         <tbody>
-            {% for h in recent_moves %}
+            {% for move in recent_moves %}
             <tr>
-                <td><a href="/item/{{ h.item_id }}" style="color:var(--black);font-weight:600;text-decoration:none">{{ h.item.name }}</a></td>
-                <td class="muted">{{ h.old_status or '—' }}</td>
+                <td class="muted">{{ move.changed_at.strftime('%d.%m.%Y %H:%M') }}</td>
                 <td>
-                    {% if h.new_status == 'На руках' %}
-                        <span class="badge badge-yellow">{{ h.new_status }}</span>
-                    {% elif h.new_status == 'Склад ЧелГУ' %}
-                        <span class="badge badge-black">{{ h.new_status }}</span>
-                    {% elif h.new_status == 'НашЭтаж' %}
-                        <span class="badge badge-green">{{ h.new_status }}</span>
+                    <a href="/item/{{ move.item_id }}" style="color:var(--black);font-weight:600;text-decoration:none">
+                        {{ move.item.name if move.item else '—' }}
+                    </a>
+                </td>
+                <td class="muted">{{ move.old_status or '—' }}</td>
+                <td>
+                    {% if move.new_status == 'На руках' %}
+                        <span class="badge badge-yellow">{{ move.new_status }}</span>
+                    {% elif move.new_status == 'Склад ЧелГУ' %}
+                        <span class="badge badge-black">{{ move.new_status }}</span>
+                    {% elif move.new_status == 'НашЭтаж' %}
+                        <span class="badge badge-green">{{ move.new_status }}</span>
                     {% else %}
-                        <span class="badge badge-blue">{{ h.new_status }}</span>
+                        <span class="badge badge-blue">{{ move.new_status }}</span>
                     {% endif %}
                 </td>
-                <td class="muted">{{ h.changed_at.strftime('%d.%m.%Y %H:%M') }}</td>
             </tr>
             {% endfor %}
         </tbody>
