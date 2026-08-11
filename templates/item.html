@@ -91,10 +91,10 @@
 </div>
 
 <!-- Фото предмета — под верхним рядом -->
-{% if item.photo %}
+{% if item.has_photo %}
 <div class="card" style="margin-top:16px;padding:20px;text-align:center">
     <p class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px">Фото предмета</p>
-    <img src="{{ url_for('static', filename='photos/' + item.photo) }}"
+    <img src="{{ url_for('main.item_photo', item_id=item.id) }}"
          style="max-width:100%;max-height:420px;object-fit:contain;border-radius:12px;display:inline-block">
 </div>
 {% endif %}

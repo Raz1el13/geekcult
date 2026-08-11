@@ -33,8 +33,10 @@ def _migrate():
             ('is_admin', 'BOOLEAN DEFAULT FALSE NOT NULL'),
         ],
         'items': [
-            ('holder_id', 'INTEGER'),
-            ('photo',     'VARCHAR(200)'),
+            ('holder_id',  'INTEGER'),
+            ('photo',      'VARCHAR(200)'),
+            ('photo_data', 'BYTEA'),
+            ('photo_mime', 'VARCHAR(50)'),
         ],
         'item_history': [
             ('note',    'VARCHAR(300)'),

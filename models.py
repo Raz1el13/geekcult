@@ -53,11 +53,17 @@ class Item(db.Model):
     status      = db.Column(db.String(50), nullable=False, default='Склад ЧелГУ')
     holder      = db.Column(db.String(100))
     holder_id   = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-    photo       = db.Column(db.String(200))
+    photo       = db.Column(db.String(200))        # legacy: имя файла на диске
+    photo_data  = db.Column(db.LargeBinary)        # сама картинка в БД
+    photo_mime  = db.Column(db.String(50))         # image/jpeg, image/png ...
     created_at  = db.Column(db.DateTime, default=utc_now)
     updated_at  = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 
     holder_user = db.relationship('User', foreign_keys=[holder_id])
+
+    @property
+    def has_photo(self):
+        return self.photo_data is not None
 
     def __repr__(self):
         return f'<Item {self.name}>'

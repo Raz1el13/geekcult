@@ -18,8 +18,25 @@ main = Blueprint('main', __name__)
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'photos')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 
+MIME_BY_EXT = {
+    'png':  'image/png',
+    'jpg':  'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'webp': 'image/webp',
+}
+
 def allowed_file(f):
     return '.' in f and f.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def save_photo(item, file):
+    """Кладёт картинку прямо в БД — переживает передеплой."""
+    if not (file and file.filename and allowed_file(file.filename)):
+        return False
+    ext = file.filename.rsplit('.', 1)[1].lower()
+    item.photo_data = file.read()
+    item.photo_mime = MIME_BY_EXT.get(ext, 'image/jpeg')
+    return True
 
 def require_auth(f):
     """Доступ только для админов — по флагу is_admin у залогиненного юзера."""
@@ -267,6 +284,15 @@ def stats():
                            top_users=top_users)
 
 
+@main.route('/photo/<int:item_id>')
+def item_photo(item_id):
+    item = db.get_or_404(Item, item_id)
+    if not item.photo_data:
+        return Response(status=404)
+    return send_file(io.BytesIO(item.photo_data),
+                     mimetype=item.photo_mime or 'image/jpeg')
+
+
 @main.route('/qr/<int:item_id>')
 def qr_image(item_id):
     db.get_or_404(Item, item_id)
@@ -353,12 +379,7 @@ def add_item():
     db.session.commit()
 
     file = request.files.get('photo')
-    if file and file.filename and allowed_file(file.filename):
-        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-        ext = file.filename.rsplit('.', 1)[1].lower()
-        filename = f'item_{item.id}.{ext}'
-        file.save(os.path.join(UPLOAD_FOLDER, filename))
-        item.photo = filename
+    if save_photo(item, file):
         db.session.commit()
 
     flash(f'Предмет «{name}» добавлен')
@@ -389,12 +410,7 @@ def update_item(item_id):
     item.description = request.form.get('description', '').strip() or None
 
     file = request.files.get('photo')
-    if file and file.filename and allowed_file(file.filename):
-        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-        ext = file.filename.rsplit('.', 1)[1].lower()
-        filename = f'item_{item.id}.{ext}'
-        file.save(os.path.join(UPLOAD_FOLDER, filename))
-        item.photo = filename
+    save_photo(item, file)
 
     if old_status != new_status or item.holder != new_holder:
         db.session.add(ItemHistory(item_id=item.id, old_status=old_status,
@@ -418,10 +434,6 @@ def update_item(item_id):
 def delete_item(item_id):
     item = db.get_or_404(Item, item_id)
     name = item.name
-    if item.photo:
-        photo_path = os.path.join(UPLOAD_FOLDER, item.photo)
-        if os.path.exists(photo_path):
-            os.remove(photo_path)
     ItemHistory.query.filter_by(item_id=item.id).delete()
     db.session.delete(item)
     db.session.commit()

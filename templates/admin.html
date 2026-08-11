@@ -69,8 +69,8 @@
             <tr>
                 <td class="muted">#{{ item.id }}</td>
                 <td>
-                    {% if item.photo %}
-                    <img src="{{ url_for('static', filename='photos/' + item.photo) }}"
+                    {% if item.has_photo %}
+                    <img src="{{ url_for('main.item_photo', item_id=item.id) }}"
                          style="width:40px;height:40px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">
                     {% else %}
                     <div style="width:40px;height:40px;border-radius:8px;background:var(--bg);border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:16px">📷</div>
@@ -150,9 +150,9 @@
             </div>
             <div>
                 <label>Обновить фото предмета</label>
-                {% if item.photo %}
+                {% if item.has_photo %}
                 <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-                    <img src="{{ url_for('static', filename='photos/' + item.photo) }}"
+                    <img src="{{ url_for('main.item_photo', item_id=item.id) }}"
                          style="width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">
                     <span class="muted" style="font-size:12px">Текущее фото</span>
                 </div>
