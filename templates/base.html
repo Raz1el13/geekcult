@@ -19,11 +19,18 @@
             --btn-r:   12px;
         }
 
+        html {
+            overflow-x: hidden;
+            -webkit-text-size-adjust: 100%;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             background: var(--bg);
             color: var(--black);
             min-height: 100vh;
+            width: 100%;
+            max-width: 100%;
             overflow-x: hidden;
         }
 
@@ -335,18 +342,67 @@
         /* ── GRID CARDS ── */
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; align-items: stretch; }
 
+        /* ── ПЛАНШЕТ И УЗКИЙ ДЕСКТОП ── */
+        @media (max-width: 860px) {
+            nav { padding: 0 14px; }
+            .nav-link { padding: 6px 9px; font-size: 13px; }
+            .nav-links { gap: 4px; }
+        }
+
+        /* ── ТЕЛЕФОН ── */
         @media (max-width: 640px) {
-            .container { padding: 20px 16px; }
-            .page-title { font-size: 22px; }
+            .container { padding: 18px 14px; }
+            .page-title { font-size: 21px; }
             .row { flex-direction: column; }
             .grid { grid-template-columns: 1fr; }
-            nav { padding: 0 16px; }
-            .nav-link { padding: 6px 10px; font-size: 13px; }
-            .user-name { display: none; }
-            .user-btn { padding: 4px; }
-            .user-dropdown { min-width: 200px; }
-            .tbl { display: block; overflow-x: auto; }
             .form-row { flex-direction: column; }
+
+            /* шапка: не даём ей растягивать страницу */
+            nav {
+                padding: 0 12px;
+                height: 56px;
+                gap: 8px;
+            }
+            .nav-brand { font-size: 17px; flex-shrink: 0; }
+            .nav-links {
+                gap: 2px;
+                min-width: 0;
+                flex-shrink: 1;
+            }
+            .nav-link {
+                padding: 6px 8px;
+                font-size: 12.5px;
+                white-space: nowrap;
+            }
+
+            /* меню профиля */
+            .user-name { display: none; }
+            .user-btn { padding: 4px; gap: 4px; }
+            .user-caret { display: none; }
+            .user-ava { width: 30px; height: 30px; }
+            .user-dropdown {
+                min-width: 0;
+                width: calc(100vw - 24px);
+                max-width: 280px;
+                right: -6px;
+            }
+
+            /* таблицы прокручиваются внутри себя, а не тянут страницу */
+            .tbl-wrap, .tbl { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .tbl { white-space: nowrap; }
+
+            /* картинки и медиа не вылезают за экран */
+            img, table, pre { max-width: 100%; }
+
+            .card { padding: 16px 14px; }
+            .btn { font-size: 13px; }
+            .modal-box { width: calc(100vw - 24px); max-width: none; }
+        }
+
+        /* ── УЗКИЕ ТЕЛЕФОНЫ ── */
+        @media (max-width: 380px) {
+            .nav-brand { font-size: 15px; }
+            .nav-link { padding: 5px 6px; font-size: 12px; }
         }
     </style>
 </head>
