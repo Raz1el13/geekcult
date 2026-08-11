@@ -312,6 +312,77 @@ def stats():
                            top_users=top_users)
 
 
+@main.route('/avatar/<int:user_id>')
+def user_avatar(user_id):
+    user = db.get_or_404(User, user_id)
+    if not user.avatar_data:
+        return Response(status=404)
+    return send_file(io.BytesIO(user.avatar_data),
+                     mimetype=user.avatar_mime or 'image/jpeg')
+
+
+@main.route('/profile/edit', methods=['GET', 'POST'])
+@login_required
+def edit_profile():
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        if not name:
+            flash('Имя не может быть пустым')
+            return render_template('profile_edit.html')
+
+        current_user.name  = name
+        current_user.about = request.form.get('about', '').strip() or None
+
+        age_raw = request.form.get('age', '').strip()
+        if age_raw:
+            try:
+                age = int(age_raw)
+                current_user.age = age if 10 <= age <= 100 else None
+            except ValueError:
+                current_user.age = None
+        else:
+            current_user.age = None
+
+        # Смена пароля — только если оба поля заполнены
+        pwd  = request.form.get('password', '')
+        pwd2 = request.form.get('password2', '')
+        if pwd or pwd2:
+            if len(pwd) < 6:
+                flash('Пароль минимум 6 символов')
+                return render_template('profile_edit.html')
+            if pwd != pwd2:
+                flash('Пароли не совпадают')
+                return render_template('profile_edit.html')
+            current_user.set_password(pwd)
+
+        # Аватар
+        file = request.files.get('avatar')
+        if file and file.filename and allowed_file(file.filename):
+            ext = file.filename.rsplit('.', 1)[1].lower()
+            current_user.avatar_data = file.read()
+            current_user.avatar_mime = MIME_BY_EXT.get(ext, 'image/jpeg')
+
+        # Имя владельца в предметах на руках держим в актуальном виде
+        for it in Item.query.filter_by(holder_id=current_user.id).all():
+            it.holder = current_user.name
+
+        db.session.commit()
+        flash('Профиль обновлён')
+        return redirect(url_for('main.profile'))
+
+    return render_template('profile_edit.html')
+
+
+@main.route('/profile/avatar/delete', methods=['POST'])
+@login_required
+def delete_avatar():
+    current_user.avatar_data = None
+    current_user.avatar_mime = None
+    db.session.commit()
+    flash('Фото профиля удалено')
+    return redirect(url_for('main.edit_profile'))
+
+
 @main.route('/photo/<int:item_id>')
 def item_photo(item_id):
     item = db.get_or_404(Item, item_id)

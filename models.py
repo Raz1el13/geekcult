@@ -12,12 +12,24 @@ def utc_now():
 class User(db.Model):
     __tablename__ = 'users'
 
-    id         = db.Column(db.Integer, primary_key=True)
-    name       = db.Column(db.String(100), nullable=False)
-    email      = db.Column(db.String(150), unique=True, nullable=False)
-    password   = db.Column(db.String(256), nullable=False)
-    is_admin   = db.Column(db.Boolean, default=False, nullable=False)
-    created_at = db.Column(db.DateTime, default=utc_now)
+    id          = db.Column(db.Integer, primary_key=True)
+    name        = db.Column(db.String(100), nullable=False)
+    email       = db.Column(db.String(150), unique=True, nullable=False)
+    password    = db.Column(db.String(256), nullable=False)
+    is_admin    = db.Column(db.Boolean, default=False, nullable=False)
+    age         = db.Column(db.Integer)
+    about       = db.Column(db.String(300))
+    avatar_data = db.Column(db.LargeBinary)
+    avatar_mime = db.Column(db.String(50))
+    created_at  = db.Column(db.DateTime, default=utc_now)
+
+    @property
+    def has_avatar(self):
+        return self.avatar_data is not None
+
+    @property
+    def initial(self):
+        return self.name[0].upper() if self.name else '?'
 
     def set_password(self, raw):
         self.password = generate_password_hash(raw)

@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Редактирование профиля — ГикКульт{% endblock %}
+{% block content %}
+
+<a href="/profile" class="btn btn-ghost btn-sm" style="margin-bottom:16px">← Назад в профиль</a>
+
+<div style="max-width:560px">
+    <h1 class="page-title">Редактирование профиля</h1>
+
+    <form method="POST" action="/profile/edit" enctype="multipart/form-data">
+
+        <!-- Фото -->
+        <div class="card" style="margin-bottom:16px">
+            <p style="font-size:16px;font-weight:700;margin-bottom:16px">Фото профиля</p>
+
+            <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+                {% if current_user.has_avatar %}
+                    <img src="{{ url_for('main.user_avatar', user_id=current_user.id) }}"
+                         style="width:84px;height:84px;border-radius:50%;object-fit:cover;border:1px solid var(--border);flex-shrink:0">
+                {% else %}
+                    <div style="width:84px;height:84px;border-radius:50%;background:var(--yellow);display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;flex-shrink:0">
+                        {{ current_user.initial }}
+                    </div>
+                {% endif %}
+
+                <div style="flex:1;min-width:200px">
+                    <input type="file" name="avatar" accept="image/*"
+                           style="width:100%;font-size:13px;color:var(--muted)">
+                    <p class="muted" style="font-size:12px;margin-top:6px">
+                        JPG, PNG или WEBP
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Основное -->
+        <div class="card" style="margin-bottom:16px">
+            <p style="font-size:16px;font-weight:700;margin-bottom:16px">Основная информация</p>
+
+            <div style="margin-bottom:14px">
+                <label>Имя и фамилия</label>
+                <input type="text" name="name" class="input" style="width:100%"
+                       value="{{ current_user.name }}" required>
+            </div>
+
+            <div style="margin-bottom:14px">
+                <label>Возраст</label>
+                <input type="number" name="age" class="input" style="width:100%"
+                       min="10" max="100" placeholder="Не указан"
+                       value="{{ current_user.age or '' }}">
+            </div>
+
+            <div style="margin-bottom:14px">
+                <label>О себе <span class="muted" style="font-weight:400">(необязательно)</span></label>
+                <textarea name="about" class="input"
+                          style="width:100%;min-height:80px;resize:vertical;font-family:inherit"
+                          placeholder="Например: 1 курс, участвую в организации мероприятий">{{ current_user.about or '' }}</textarea>
+            </div>
+
+            <div>
+                <label>Email</label>
+                <input type="email" class="input" style="width:100%;background:var(--bg);color:var(--muted)"
+                       value="{{ current_user.email }}" disabled>
+                <p class="muted" style="font-size:12px;margin-top:6px">Email изменить нельзя</p>
+            </div>
+        </div>
+
+        <!-- Пароль -->
+        <div class="card" style="margin-bottom:16px">
+            <p style="font-size:16px;font-weight:700;margin-bottom:6px">Смена пароля</p>
+            <p class="muted" style="font-size:13px;margin-bottom:16px">
+                Оставьте поля пустыми, если менять не нужно
+            </p>
+
+            <div style="margin-bottom:14px">
+                <label>Новый пароль</label>
+                <input type="password" name="password" class="input" style="width:100%"
+                       placeholder="••••••" autocomplete="new-password">
+            </div>
+
+            <div>
+                <label>Повторите пароль</label>
+                <input type="password" name="password2" class="input" style="width:100%"
+                       placeholder="••••••" autocomplete="new-password">
+            </div>
+        </div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+            <a href="/profile" class="btn btn-ghost">Отмена</a>
+        </div>
+    </form>
+
+    {% if current_user.has_avatar %}
+    <form method="POST" action="/profile/avatar/delete" style="margin-top:12px"
+          onsubmit="return confirm('Удалить фото профиля?')">
+        <button type="submit" class="btn btn-ghost btn-sm" style="color:#D93025">
+            Удалить фото профиля
+        </button>
+    </form>
+    {% endif %}
+</div>
+
+{% endblock %}

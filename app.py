@@ -30,7 +30,11 @@ def _migrate():
     # Добавляем недостающие колонки если их нет
     new_columns = {
         'users': [
-            ('is_admin', 'BOOLEAN DEFAULT FALSE NOT NULL'),
+            ('is_admin',    'BOOLEAN DEFAULT FALSE NOT NULL'),
+            ('age',         'INTEGER'),
+            ('about',       'VARCHAR(300)'),
+            ('avatar_data', 'BYTEA'),
+            ('avatar_mime', 'VARCHAR(50)'),
         ],
         'items': [
             ('holder_id',  'INTEGER'),
