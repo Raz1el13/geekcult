@@ -46,7 +46,7 @@
             text-decoration: none;
             letter-spacing: -0.5px;
         }
-        .nav-links { display: flex; gap: 8px; }
+        .nav-links { display: flex; gap: 8px; align-items: center; }
         .nav-link {
             color: var(--white);
             text-decoration: none;
@@ -266,7 +266,7 @@
             {% if current_user.is_admin %}
                 <a href="/admin" class="nav-link {% if request.path == '/admin' %}active{% endif %}">Админка</a>
             {% endif %}
-            <a href="/profile" class="nav-link {% if request.path == '/profile' %}active{% endif %}">👤 {{ current_user.name.split()[0] }}</a>
+            <a href="/profile" class="nav-link {% if request.path == '/profile' %}active{% endif %}">{{ current_user.name.split()[0] }}</a>
             <a href="/logout"  class="nav-link">Выйти</a>
         {% else %}
             <a href="/login"    class="nav-link {% if request.path == '/login' %}active{% endif %}">Войти</a>
