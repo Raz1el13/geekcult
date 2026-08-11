@@ -21,13 +21,29 @@
     </div>
 </div>
 
-<div class="chips mb-3">
-    <a href="/" class="chip {% if not request.args.get('status') %}active{% endif %}">Все</a>
+{% set cur_status = request.args.get('status') %}
+{% set cur_avail  = request.args.get('avail') %}
+
+<div class="chips mb-3" style="margin-bottom:10px">
+    <span class="muted" style="font-size:13px;align-self:center;margin-right:4px">Локация:</span>
+    <a href="/{% if cur_avail %}?avail={{ cur_avail }}{% endif %}"
+       class="chip {% if not cur_status %}active{% endif %}">Все</a>
     {% for status in statuses %}
-        <a href="/?status={{ status }}" class="chip {% if request.args.get('status') == status %}active{% endif %}">
+        <a href="/?status={{ status }}{% if cur_avail %}&avail={{ cur_avail }}{% endif %}"
+           class="chip {% if cur_status == status %}active{% endif %}">
             {{ status }}
         </a>
     {% endfor %}
+</div>
+
+<div class="chips mb-3">
+    <span class="muted" style="font-size:13px;align-self:center;margin-right:4px">Доступность:</span>
+    <a href="/{% if cur_status %}?status={{ cur_status }}{% endif %}"
+       class="chip {% if not cur_avail %}active{% endif %}">Любая</a>
+    <a href="/?avail=free{% if cur_status %}&status={{ cur_status }}{% endif %}"
+       class="chip {% if cur_avail == 'free' %}active{% endif %}">Свободно · {{ free_count }}</a>
+    <a href="/?avail=taken{% if cur_status %}&status={{ cur_status }}{% endif %}"
+       class="chip {% if cur_avail == 'taken' %}active{% endif %}">Занято · {{ taken_count }}</a>
 </div>
 
 <div class="grid" id="items-grid">
@@ -69,6 +85,18 @@
 
             {% if item.holder %}
                 <p style="font-size:13px">👤 <span class="muted">У кого:</span> <strong>{{ item.holder }}</strong></p>
+            {% endif %}
+
+            {% if item.due_date %}
+                {% if item.is_overdue %}
+                    <p style="font-size:12px;color:#D93025;font-weight:600">
+                        Просрочено на {{ -item.days_left }} дн.
+                    </p>
+                {% else %}
+                    <p class="muted" style="font-size:12px">
+                        Вернуть до {{ item.due_date.strftime('%d.%m.%Y') }}
+                    </p>
+                {% endif %}
             {% endif %}
 
             <div class="flex between" style="align-items:center;margin-top:auto;padding-top:8px">

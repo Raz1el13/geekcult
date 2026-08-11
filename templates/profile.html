@@ -49,9 +49,24 @@
                 <img src="{{ url_for('main.item_photo', item_id=item.id) }}"
                      style="width:100%;border-radius:8px;margin-bottom:8px;max-height:120px;object-fit:contain;background:var(--bg)">
                 {% endif %}
-                <p class="muted" style="font-size:12px;margin-bottom:12px">
+                <p class="muted" style="font-size:12px;margin-bottom:6px">
                     Взято: {{ item.updated_at.strftime('%d.%m.%Y') if item.updated_at else '' }}
                 </p>
+                {% if item.due_date %}
+                    {% if item.is_overdue %}
+                    <p style="font-size:12px;color:#D93025;font-weight:600;margin-bottom:12px">
+                        Просрочено на {{ -item.days_left }} дн.
+                    </p>
+                    {% elif item.days_left == 0 %}
+                    <p style="font-size:12px;color:#B26A00;font-weight:600;margin-bottom:12px">
+                        Вернуть сегодня
+                    </p>
+                    {% else %}
+                    <p class="muted" style="font-size:12px;margin-bottom:12px">
+                        Вернуть до {{ item.due_date.strftime('%d.%m.%Y') }} · осталось {{ item.days_left }} дн.
+                    </p>
+                    {% endif %}
+                {% endif %}
                 <div style="display:flex;gap:8px">
                     <a href="/item/{{ item.id }}" class="btn btn-ghost btn-sm">Подробнее</a>
                     <form method="POST" action="/item/{{ item.id }}/return" style="flex:1">

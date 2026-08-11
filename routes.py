@@ -11,6 +11,8 @@ from flask import (Blueprint, render_template, request, redirect,
 from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy import func
 
+from datetime import timedelta
+
 from models import db, Item, ItemHistory, User, STATUSES, utc_now
 
 main = Blueprint('main', __name__)
@@ -164,10 +166,19 @@ def book_item(item_id):
         flash(f'«{item.name}» уже на руках')
         return redirect(url_for('main.item_detail', item_id=item_id))
 
+    # Срок брони в днях
+    try:
+        days = int(request.form.get('days', 7))
+    except ValueError:
+        days = 7
+    if days not in (1, 3, 7, 14, 30):
+        days = 7
+
     old_status = item.status
-    item.status    = 'На руках'
-    item.holder    = current_user.name
-    item.holder_id = current_user.id
+    item.status     = 'На руках'
+    item.holder     = current_user.name
+    item.holder_id  = current_user.id
+    item.due_date   = utc_now() + timedelta(days=days)
     item.updated_at = utc_now()
 
     db.session.add(ItemHistory(
@@ -175,12 +186,12 @@ def book_item(item_id):
         old_status=old_status,
         new_status='На руках',
         user_id=current_user.id,
-        note=f'Забронировано пользователем {current_user.name}'
+        note=f'Забронировано пользователем {current_user.name} на {days} дн.'
     ))
     db.session.commit()
 
-    send_telegram(f'📦 <b>{item.name}</b>\n{old_status} → <b>На руках</b> (у {current_user.name})')
-    flash(f'«{item.name}» забронирован и теперь у вас на руках')
+    send_telegram(f'📦 <b>{item.name}</b>\n{old_status} → <b>На руках</b> (у {current_user.name}, на {days} дн.)')
+    flash(f'«{item.name}» ваш до {item.due_date.strftime("%d.%m.%Y")}')
     return redirect(url_for('main.profile'))
 
 
@@ -203,6 +214,7 @@ def return_item(item_id):
     item.status     = return_status
     item.holder     = None
     item.holder_id  = None
+    item.due_date   = None
     item.updated_at = utc_now()
 
     db.session.add(ItemHistory(
@@ -223,16 +235,28 @@ def return_item(item_id):
 @main.route('/')
 def index():
     status_filter = request.args.get('status')
+    avail_filter  = request.args.get('avail')
     q = request.args.get('q', '').strip()
 
     query = Item.query
     if status_filter and status_filter in STATUSES:
         query = query.filter_by(status=status_filter)
+
+    if avail_filter == 'free':
+        query = query.filter(Item.status != 'На руках')
+    elif avail_filter == 'taken':
+        query = query.filter(Item.status == 'На руках')
+
     if q:
         query = query.filter(func.lower(Item.name).contains(func.lower(q)))
 
     items = query.order_by(Item.updated_at.desc()).all()
-    return render_template('index.html', items=items, statuses=STATUSES)
+
+    free_count  = Item.query.filter(Item.status != 'На руках').count()
+    taken_count = Item.query.filter(Item.status == 'На руках').count()
+
+    return render_template('index.html', items=items, statuses=STATUSES,
+                           free_count=free_count, taken_count=taken_count)
 
 
 @main.route('/item/<int:item_id>')
@@ -254,6 +278,9 @@ def stats():
     total_users  = User.query.count()
     total_moves  = ItemHistory.query.count()
     on_hands     = Item.query.filter_by(status='На руках').count()
+
+    # Просроченные брони
+    overdue = sum(1 for i in Item.query.filter(Item.due_date.isnot(None)).all() if i.is_overdue)
 
     # Топ-5 самых востребованных предметов
     top_items = db.session.query(
@@ -280,6 +307,7 @@ def stats():
                            total_users=total_users,
                            total_moves=total_moves,
                            on_hands=on_hands,
+                           overdue=overdue,
                            top_items=top_items,
                            top_users=top_users)
 
@@ -418,6 +446,8 @@ def update_item(item_id):
         item.status     = new_status
         item.holder     = new_holder
         item.holder_id  = None
+        if new_status != 'На руках':
+            item.due_date = None
         item.updated_at = utc_now()
         db.session.commit()
         flash(f'Статус «{item.name}»: {old_status} → {new_status}')

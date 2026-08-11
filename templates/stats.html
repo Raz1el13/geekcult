@@ -32,6 +32,14 @@
 
     <div class="card" style="padding:0;overflow:hidden">
         <div style="padding:20px">
+            <p class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Просрочено</p>
+            <p style="font-size:34px;font-weight:800;line-height:1;{% if overdue %}color:#D93025{% endif %}">{{ overdue }}</p>
+        </div>
+        <div style="height:4px;background:{% if overdue %}#D93025{% else %}#22A06B{% endif %}"></div>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:20px">
             <p class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Пользователей</p>
             <p style="font-size:34px;font-weight:800;line-height:1">{{ total_users }}</p>
         </div>

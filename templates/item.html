@@ -74,6 +74,16 @@
             {% if item.status != 'На руках' %}
                 {% if current_user.is_authenticated %}
                 <form method="POST" action="/item/{{ item.id }}/book" style="width:100%">
+                    <div style="margin-bottom:10px;text-align:left">
+                        <label style="font-size:12px">На какой срок</label>
+                        <select name="days" class="select" style="width:100%">
+                            <option value="1">1 день</option>
+                            <option value="3">3 дня</option>
+                            <option value="7" selected>7 дней</option>
+                            <option value="14">14 дней</option>
+                            <option value="30">30 дней</option>
+                        </select>
+                    </div>
                     <button type="submit" class="btn btn-dark" style="width:100%;justify-content:center">
                         Забронировать
                     </button>
@@ -84,8 +94,16 @@
                 </a>
                 {% endif %}
             {% else %}
-                <div style="width:100%;background:#FFF8E1;border-radius:10px;padding:10px 14px;font-size:13px;line-height:1.4">
+                <div style="width:100%;background:{% if item.is_overdue %}#FDECEA{% else %}#FFF8E1{% endif %};border-radius:10px;padding:10px 14px;font-size:13px;line-height:1.5">
                     На руках у <strong>{{ item.holder }}</strong>
+                    {% if item.due_date %}
+                        <br>
+                        {% if item.is_overdue %}
+                            <span style="color:#D93025;font-weight:600">Просрочено на {{ -item.days_left }} дн.</span>
+                        {% else %}
+                            <span class="muted">Вернуть до {{ item.due_date.strftime('%d.%m.%Y') }}</span>
+                        {% endif %}
+                    {% endif %}
                 </div>
             {% endif %}
         </div>

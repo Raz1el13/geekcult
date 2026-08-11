@@ -56,6 +56,7 @@ class Item(db.Model):
     photo       = db.Column(db.String(200))        # legacy: имя файла на диске
     photo_data  = db.Column(db.LargeBinary)        # сама картинка в БД
     photo_mime  = db.Column(db.String(50))         # image/jpeg, image/png ...
+    due_date    = db.Column(db.DateTime)           # вернуть до (при брони)
     created_at  = db.Column(db.DateTime, default=utc_now)
     updated_at  = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 
@@ -64,6 +65,26 @@ class Item(db.Model):
     @property
     def has_photo(self):
         return self.photo_data is not None
+
+    @property
+    def _due_utc(self):
+        """Срок возврата с гарантированной таймзоной."""
+        if not self.due_date:
+            return None
+        return self.due_date if self.due_date.tzinfo else self.due_date.replace(tzinfo=timezone.utc)
+
+    @property
+    def is_overdue(self):
+        due = self._due_utc
+        return bool(due and datetime.now(timezone.utc) > due)
+
+    @property
+    def days_left(self):
+        """Дней до возврата. Отрицательное — просрочено."""
+        due = self._due_utc
+        if not due:
+            return None
+        return (due.date() - datetime.now(timezone.utc).date()).days
 
     def __repr__(self):
         return f'<Item {self.name}>'

@@ -37,6 +37,7 @@ def _migrate():
             ('photo',      'VARCHAR(200)'),
             ('photo_data', 'BYTEA'),
             ('photo_mime', 'VARCHAR(50)'),
+            ('due_date',   'TIMESTAMP'),
         ],
         'item_history': [
             ('note',    'VARCHAR(300)'),
