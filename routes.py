@@ -22,14 +22,15 @@ def allowed_file(f):
     return '.' in f and f.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def require_auth(f):
+    """Доступ только для админов — по флагу is_admin у залогиненного юзера."""
     @wraps(f)
     def decorated(*args, **kwargs):
-        auth     = request.authorization
-        login    = os.getenv('ADMIN_LOGIN',    'admin')
-        password = os.getenv('ADMIN_PASSWORD', 'geekcult2026')
-        if not auth or not (auth.username == login and auth.password == password):
-            return Response('Нужна авторизация', 401,
-                            {'WWW-Authenticate': 'Basic realm="Admin"'})
+        if not current_user.is_authenticated:
+            flash('Войдите в аккаунт администратора')
+            return redirect(url_for('main.login', next=request.path))
+        if not current_user.is_admin:
+            flash('Раздел доступен только администраторам')
+            return redirect(url_for('main.index'))
         return f(*args, **kwargs)
     return decorated
 

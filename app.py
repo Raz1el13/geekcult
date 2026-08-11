@@ -29,6 +29,9 @@ def _migrate():
 
     # Добавляем недостающие колонки если их нет
     new_columns = {
+        'users': [
+            ('is_admin', 'BOOLEAN DEFAULT FALSE NOT NULL'),
+        ],
         'items': [
             ('holder_id', 'INTEGER'),
             ('photo',     'VARCHAR(200)'),
@@ -51,6 +54,24 @@ def _migrate():
     db.session.commit()
 
 
+def _ensure_admin():
+    """Создаёт админа из переменных окружения при первом запуске."""
+    email    = os.getenv('ADMIN_EMAIL',    'admin@geekcult.ru')
+    password = os.getenv('ADMIN_PASSWORD', 'geekcult2026')
+    name     = os.getenv('ADMIN_NAME',     'Администратор')
+
+    user = User.query.filter_by(email=email).first()
+
+    if user is None:
+        user = User(name=name, email=email, is_admin=True)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+    elif not user.is_admin:
+        user.is_admin = True
+        db.session.commit()
+
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -62,6 +83,7 @@ def create_app():
     with app.app_context():
         db.create_all()
         _migrate()
+        _ensure_admin()
 
     return app
 

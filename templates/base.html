@@ -263,13 +263,15 @@
         <a href="/"        class="nav-link {% if request.path == '/' %}active{% endif %}">Имущество</a>
         <a href="/stats"   class="nav-link {% if request.path == '/stats' %}active{% endif %}">Статистика</a>
         {% if current_user.is_authenticated %}
+            {% if current_user.is_admin %}
+                <a href="/admin" class="nav-link {% if request.path == '/admin' %}active{% endif %}">Админка</a>
+            {% endif %}
             <a href="/profile" class="nav-link {% if request.path == '/profile' %}active{% endif %}">👤 {{ current_user.name.split()[0] }}</a>
             <a href="/logout"  class="nav-link">Выйти</a>
         {% else %}
             <a href="/login"    class="nav-link {% if request.path == '/login' %}active{% endif %}">Войти</a>
             <a href="/register" class="nav-link" style="background:var(--yellow);color:var(--black)">Регистрация</a>
         {% endif %}
-        <a href="/admin"   class="nav-link {% if request.path == '/admin' %}active{% endif %}">Админка</a>
     </div>
 </nav>
 
