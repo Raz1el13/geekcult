@@ -17,6 +17,16 @@ def _migrate():
     from sqlalchemy import text, inspect
     inspector = inspect(db.engine)
 
+    # Старая таблица users (от прошлой схемы) не подходит текущей модели —
+    # пересоздаём её. Реальных пользователей там нет.
+    if inspector.has_table('users'):
+        existing = {c['name'] for c in inspector.get_columns('users')}
+        if 'name' not in existing:
+            db.session.execute(text('DROP TABLE users CASCADE'))
+            db.session.commit()
+            db.create_all()
+            inspector = inspect(db.engine)
+
     # Добавляем недостающие колонки если их нет
     new_columns = {
         'items': [
