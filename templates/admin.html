@@ -121,6 +121,16 @@
         <p class="modal-title">{{ item.name }}</p>
         <form method="POST" action="/admin/update/{{ item.id }}" enctype="multipart/form-data">
             <div style="margin-bottom:14px">
+                <label>Название</label>
+                <input type="text" name="name" class="input" style="width:100%"
+                       value="{{ item.name }}" required>
+            </div>
+            <div style="margin-bottom:14px">
+                <label>Описание</label>
+                <textarea name="description" class="input" style="width:100%;min-height:90px;resize:vertical;font-family:inherit"
+                          placeholder="Краткое описание предмета">{{ item.description or '' }}</textarea>
+            </div>
+            <div style="margin-bottom:14px">
                 <label>Новый статус</label>
                 <select name="status" class="select" style="width:100%">
                     {% for status in statuses %}

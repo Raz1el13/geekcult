@@ -342,6 +342,12 @@ def update_item(item_id):
 
     note = request.form.get('note', '').strip() or None
 
+    # Название и описание
+    new_name = request.form.get('name', '').strip()
+    if new_name:
+        item.name = new_name
+    item.description = request.form.get('description', '').strip() or None
+
     file = request.files.get('photo')
     if file and file.filename and allowed_file(file.filename):
         os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -360,8 +366,9 @@ def update_item(item_id):
         db.session.commit()
         flash(f'Статус «{item.name}»: {old_status} → {new_status}')
     else:
+        item.updated_at = utc_now()
         db.session.commit()
-        flash('Изменений нет')
+        flash(f'Предмет «{item.name}» обновлён')
 
     return redirect(url_for('main.admin'))
 
