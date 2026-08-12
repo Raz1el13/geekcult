@@ -2,6 +2,15 @@
 {% block title %}Админка — ГикКульт{% endblock %}
 {% block content %}
 
+<style>
+.form-cell { min-width: 160px; max-width: 200px; }
+@media (max-width: 640px) {
+    .form-cell { min-width: 0; max-width: none; width: 100%; }
+    .form-row  { gap: 12px; }
+}
+</style>
+
+
 <div class="flex between wrap mb-3" style="margin-bottom:24px;gap:12px">
     <h1 class="page-title" style="margin-bottom:0">Админ-панель</h1>
     <div class="flex gap-1">
@@ -23,7 +32,7 @@
                 <label>Описание</label>
                 <input type="text" name="description" class="input" placeholder="Краткое описание">
             </div>
-            <div style="min-width:160px;max-width:200px">
+            <div class="form-cell">
                 <label>Статус</label>
                 <select name="status" class="select" style="width:100%">
                     {% for status in statuses %}
@@ -31,11 +40,11 @@
                     {% endfor %}
                 </select>
             </div>
-            <div style="min-width:160px;max-width:200px">
+            <div class="form-cell">
                 <label>У кого (если на руках)</label>
                 <input type="text" name="holder" class="input" placeholder="Иванов И.И.">
             </div>
-            <div style="min-width:160px;max-width:200px">
+            <div class="form-cell">
                 <label>Фото предмета</label>
                 <input type="file" name="photo" accept="image/*"
                        style="width:100%;font-size:13px;padding:8px 0;color:var(--muted)">
@@ -52,7 +61,7 @@
     </p>
 
     {% if items %}
-    <table class="tbl">
+    <div class="tbl-wrap"><table class="tbl">
         <thead>
             <tr>
                 <th>ID</th>
@@ -108,7 +117,7 @@
             </tr>
             {% endfor %}
         </tbody>
-    </table>
+    </table></div>
     {% else %}
     <p class="muted" style="text-align:center;padding:32px 0">Предметов пока нет — добавь первый выше</p>
     {% endif %}

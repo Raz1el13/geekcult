@@ -4,7 +4,7 @@
 
 <a href="/profile" class="btn btn-ghost btn-sm" style="margin-bottom:16px">← Назад в профиль</a>
 
-<div style="max-width:560px">
+<div style="max-width:560px;width:100%">
     <h1 class="page-title">Редактирование профиля</h1>
 
     <form method="POST" action="/profile/edit" enctype="multipart/form-data">
@@ -23,7 +23,7 @@
                     </div>
                 {% endif %}
 
-                <div style="flex:1;min-width:200px">
+                <div style="flex:1;min-width:0">
                     <input type="file" name="avatar" accept="image/*"
                            style="width:100%;font-size:13px;color:var(--muted)">
                     <p class="muted" style="font-size:12px;margin-top:6px">

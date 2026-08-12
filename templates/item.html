@@ -124,7 +124,7 @@
 <div class="card" style="margin-top:16px">
     <p style="font-size:16px;font-weight:700;margin-bottom:16px">История перемещений</p>
     {% if item.history %}
-    <table class="tbl">
+    <div class="tbl-wrap"><table class="tbl">
         <thead>
             <tr><th>Дата</th><th>Откуда</th><th>Куда</th><th>Заметка</th></tr>
         </thead>
@@ -145,7 +145,7 @@
             </tr>
             {% endfor %}
         </tbody>
-    </table>
+    </table></div>
     {% else %}
     <p class="muted" style="text-align:center;padding:24px 0">Перемещений ещё не было</p>
     {% endif %}
@@ -157,8 +157,9 @@
 .item-qr-col  { width:260px; flex-shrink:0; display:flex; }
 .item-qr-col .card { flex:1; display:flex; flex-direction:column; justify-content:center; }
 @media (max-width:640px) {
-    .item-top-row { flex-direction:column; }
+    .item-top-row { flex-direction:column; gap:12px; }
     .item-qr-col  { width:100%; }
+    .item-qr-col img[src*="/qr/"] { width:150px !important; height:150px !important; }
 }
 </style>
 {% endblock %}

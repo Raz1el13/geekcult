@@ -91,7 +91,7 @@
 <!-- Топы -->
 <div class="detail-row" style="align-items:flex-start;gap:16px;display:flex;flex-wrap:wrap;margin-bottom:24px">
 
-    <div class="card" style="flex:1;min-width:280px">
+    <div class="card" style="flex:1;min-width:min(280px,100%)">
         <p style="font-size:16px;font-weight:700;margin-bottom:16px">Самые востребованные</p>
         {% if top_items %}
         <div style="display:flex;flex-direction:column;gap:12px">
@@ -110,7 +110,7 @@
         {% endif %}
     </div>
 
-    <div class="card" style="flex:1;min-width:280px">
+    <div class="card" style="flex:1;min-width:min(280px,100%)">
         <p style="font-size:16px;font-weight:700;margin-bottom:16px">Самые активные</p>
         {% if top_users %}
         <div style="display:flex;flex-direction:column;gap:12px">
@@ -136,7 +136,7 @@
     <p style="font-size:16px;font-weight:700;margin-bottom:16px">Последние перемещения</p>
 
     {% if recent_moves %}
-    <table class="tbl">
+    <div class="tbl-wrap"><table class="tbl">
         <thead>
             <tr>
                 <th>Дата</th>
@@ -169,7 +169,7 @@
             </tr>
             {% endfor %}
         </tbody>
-    </table>
+    </table></div>
     {% else %}
     <p class="muted" style="text-align:center;padding:24px 0">Перемещений ещё не было</p>
     {% endif %}

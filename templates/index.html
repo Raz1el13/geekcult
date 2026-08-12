@@ -10,12 +10,20 @@
 
 {% block content %}
 
-<div class="flex between wrap mb-3" style="gap:12px">
+<style>
+.search-wrap { width: 240px; max-width: 100%; }
+@media (max-width: 640px) {
+    .search-wrap { width: 100%; }
+}
+</style>
+
+
+<div class="flex between wrap mb-3" style="gap:12px;align-items:center">
     <h1 class="page-title" style="margin-bottom:0">Имущество</h1>
-    <div style="position:relative">
+    <div class="search-wrap" style="position:relative">
         <input type="text" id="search-input" class="input" placeholder="Поиск…"
                value="{{ request.args.get('q', '') }}"
-               style="width:220px;padding-right:36px"
+               style="width:100%;padding-right:36px"
                oninput="liveSearch(this.value)">
         <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none">🔍</span>
     </div>

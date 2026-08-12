@@ -116,7 +116,7 @@
     </p>
 
     {% if history %}
-    <table class="tbl">
+    <div class="tbl-wrap"><table class="tbl">
         <thead>
             <tr>
                 <th>Дата</th>
@@ -137,7 +137,7 @@
             </tr>
             {% endfor %}
         </tbody>
-    </table>
+    </table></div>
     {% else %}
     <p class="muted" style="text-align:center;padding:24px 0">Вы ещё ничего не бронировали</p>
     {% endif %}
