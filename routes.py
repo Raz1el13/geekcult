@@ -152,7 +152,8 @@ def profile():
         .order_by(ItemHistory.changed_at.desc())\
         .limit(20).all()
 
-    return render_template('profile.html', my_items=my_items, history=history)
+    return render_template('profile.html', my_items=my_items, history=history,
+                           statuses=[s for s in STATUSES if s != 'На руках'])
 
 
 # ── Бронирование ──────────────────────────────────────────────────────────────
@@ -205,11 +206,17 @@ def return_item(item_id):
         return redirect(url_for('main.profile'))
 
     old_status = item.status
-    # Возвращаем на предыдущее место из истории
-    prev = ItemHistory.query.filter_by(item_id=item.id)\
-        .filter(ItemHistory.new_status == 'На руках')\
-        .order_by(ItemHistory.changed_at.desc()).first()
-    return_status = prev.old_status if prev and prev.old_status else 'Склад ЧелГУ'
+
+    # Куда возвращаем — выбирает пользователь
+    chosen = request.form.get('status', '').strip()
+    if chosen in STATUSES and chosen != 'На руках':
+        return_status = chosen
+    else:
+        # Запасной вариант: туда, откуда брали
+        prev = ItemHistory.query.filter_by(item_id=item.id)\
+            .filter(ItemHistory.new_status == 'На руках')\
+            .order_by(ItemHistory.changed_at.desc()).first()
+        return_status = prev.old_status if prev and prev.old_status else 'Склад ЧелГУ'
 
     item.status     = return_status
     item.holder     = None
@@ -226,7 +233,8 @@ def return_item(item_id):
     ))
     db.session.commit()
 
-    flash(f'«{item.name}» возвращён')
+    send_telegram(f'📦 <b>{item.name}</b>\nНа руках → <b>{return_status}</b> (вернул {current_user.name})')
+    flash(f'«{item.name}» возвращён: {return_status}')
     return redirect(url_for('main.profile'))
 
 

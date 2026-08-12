@@ -87,14 +87,20 @@
                     </p>
                     {% endif %}
                 {% endif %}
-                <div style="display:flex;gap:8px">
-                    <a href="/item/{{ item.id }}" class="btn btn-ghost btn-sm">Подробнее</a>
-                    <form method="POST" action="/item/{{ item.id }}/return" style="flex:1">
-                        <button type="submit" class="btn btn-primary btn-sm" style="width:100%;justify-content:center">
+                <form method="POST" action="/item/{{ item.id }}/return">
+                    <label style="font-size:12px;margin-bottom:4px">Куда возвращаете</label>
+                    <select name="status" class="select" style="width:100%;margin-bottom:8px">
+                        {% for st in statuses %}
+                        <option value="{{ st }}">{{ st }}</option>
+                        {% endfor %}
+                    </select>
+                    <div style="display:flex;gap:8px">
+                        <a href="/item/{{ item.id }}" class="btn btn-ghost btn-sm">Подробнее</a>
+                        <button type="submit" class="btn btn-primary btn-sm" style="flex:1;justify-content:center">
                             Вернуть
                         </button>
-                    </form>
-                </div>
+                    </div>
+                </form>
             </div>
         </div>
         {% endfor %}
