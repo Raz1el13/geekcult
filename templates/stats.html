@@ -2,10 +2,10 @@
 {% block title %}Статистика — ГикКульт{% endblock %}
 
 {% set STATUS_COLOR = {
-    'Склад ЧелГУ':  '#000000',
-    'НашЭтаж':      '#22A06B',
-    'Хобби-Студия': '#2B7FFF',
-    'На руках':     '#FFDD2D'
+    'Склад ЧелГУ':  '#8700B5',
+    'НашЭтаж':      '#00D884',
+    'Хобби-Студия': '#B45CFF',
+    'На руках':     '#00D884'
 } %}
 
 {% block content %}
@@ -33,9 +33,9 @@
     <div class="card" style="padding:0;overflow:hidden">
         <div style="padding:20px">
             <p class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Просрочено</p>
-            <p style="font-size:34px;font-weight:800;line-height:1;{% if overdue %}color:#D93025{% endif %}">{{ overdue }}</p>
+            <p style="font-size:34px;font-weight:800;line-height:1;{% if overdue %}color:#FF6B6B{% endif %}">{{ overdue }}</p>
         </div>
-        <div style="height:4px;background:{% if overdue %}#D93025{% else %}#22A06B{% endif %}"></div>
+        <div style="height:4px;background:{% if overdue %}#FF6B6B{% else %}#00D884{% endif %}"></div>
     </div>
 
     <div class="card" style="padding:0;overflow:hidden">
@@ -43,7 +43,7 @@
             <p class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Пользователей</p>
             <p style="font-size:34px;font-weight:800;line-height:1">{{ total_users }}</p>
         </div>
-        <div style="height:4px;background:#2B7FFF"></div>
+        <div style="height:4px;background:#B45CFF"></div>
     </div>
 
     <div class="card" style="padding:0;overflow:hidden">
@@ -51,7 +51,7 @@
             <p class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Всего перемещений</p>
             <p style="font-size:34px;font-weight:800;line-height:1">{{ total_moves }}</p>
         </div>
-        <div style="height:4px;background:#22A06B"></div>
+        <div style="height:4px;background:#00D884"></div>
     </div>
 </div>
 
@@ -63,7 +63,7 @@
         <!-- Полоса -->
         <div style="display:flex;height:32px;border-radius:10px;overflow:hidden;margin-bottom:18px">
             {% for status, count in status_counts %}
-            <div style="width:{{ (count / total_items * 100)|round(1) }}%;background:{{ STATUS_COLOR.get(status, '#9299A2') }}"
+            <div style="width:{{ (count / total_items * 100)|round(1) }}%;background:{{ STATUS_COLOR.get(status, '#8B8397') }}"
                  title="{{ status }}: {{ count }}"></div>
             {% endfor %}
         </div>
@@ -73,7 +73,7 @@
             {% for status, count in status_counts %}
             <div class="flex between" style="align-items:center">
                 <div style="display:flex;align-items:center;gap:10px">
-                    <span style="width:12px;height:12px;border-radius:3px;background:{{ STATUS_COLOR.get(status, '#9299A2') }};display:inline-block;flex-shrink:0"></span>
+                    <span style="width:12px;height:12px;border-radius:3px;background:{{ STATUS_COLOR.get(status, '#8B8397') }};display:inline-block;flex-shrink:0"></span>
                     <span style="font-size:14px;font-weight:500">{{ status }}</span>
                 </div>
                 <div style="display:flex;align-items:baseline;gap:8px">

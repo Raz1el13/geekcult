@@ -1,4 +1,4 @@
- from app import create_app
+from app import create_app
 from models import db, Item
 from utils import generate_qr
 

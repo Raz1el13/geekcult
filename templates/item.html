@@ -22,10 +22,10 @@
             <h1 style="font-size:24px;font-weight:800;letter-spacing:-.5px;margin-bottom:10px">{{ item.name }}</h1>
 
             {% if item.description %}
-                <p style="font-size:14px;line-height:1.6;color:#444;margin-bottom:16px">{{ item.description }}</p>
+                <p style="font-size:14px;line-height:1.6;color:#B8B0C6;margin-bottom:16px">{{ item.description }}</p>
             {% endif %}
 
-            <div style="background:var(--bg);border-radius:12px;padding:14px 16px;margin-bottom:16px">
+            <div style="background:#0F0B15;border-radius:12px;padding:14px 16px;margin-bottom:16px">
                 <p class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Текущее местоположение</p>
                 {% if item.status == 'На руках' %}
                     <span class="badge badge-yellow" style="font-size:13px;padding:6px 14px">👤 {{ item.status }}</span>
@@ -94,12 +94,12 @@
                 </a>
                 {% endif %}
             {% else %}
-                <div style="width:100%;background:{% if item.is_overdue %}#FDECEA{% else %}#FFF8E1{% endif %};border-radius:10px;padding:10px 14px;font-size:13px;line-height:1.5">
+                <div style="width:100%;background:{% if item.is_overdue %}rgba(255,80,80,.14){% else %}rgba(0,216,132,.12){% endif %};border-radius:10px;padding:10px 14px;font-size:13px;line-height:1.5">
                     На руках у <strong>{{ item.holder }}</strong>
                     {% if item.due_date %}
                         <br>
                         {% if item.is_overdue %}
-                            <span style="color:#D93025;font-weight:600">Просрочено на {{ -item.days_left }} дн.</span>
+                            <span style="color:#FF6B6B;font-weight:600">Просрочено на {{ -item.days_left }} дн.</span>
                         {% else %}
                             <span class="muted">Вернуть до {{ item.due_date.strftime('%d.%m.%Y') }}</span>
                         {% endif %}
