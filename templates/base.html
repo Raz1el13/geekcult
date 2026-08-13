@@ -506,6 +506,86 @@
         /* ── УБИРАЕМ ЗАДЕРЖКУ КАСАНИЯ ── */
         a, button, .btn, .chip { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 
+
+        /* ── FOOTER ── */
+        body { display: flex; flex-direction: column; }
+        .container { flex: 1; }
+
+        .site-footer {
+            margin-top: 60px;
+            border-top: 1px solid var(--border);
+            background: rgba(11,8,16,.6);
+            backdrop-filter: blur(10px);
+        }
+        .footer-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 32px 24px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+        .footer-brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .footer-brand img {
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            display: block;
+            filter: drop-shadow(0 0 10px rgba(135,0,181,.45));
+        }
+        .footer-title {
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: -.2px;
+        }
+        .footer-sub {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+        .footer-authors { text-align: right; }
+        .footer-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.4px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+        .footer-names {
+            font-size: 14px;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--violet), var(--mint));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .footer-bottom {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 14px 24px 22px;
+            border-top: 1px solid var(--border);
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        @media (max-width: 640px) {
+            .site-footer { margin-top: 40px; }
+            .footer-inner {
+                padding: 24px 14px 18px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 20px;
+            }
+            .footer-authors { text-align: left; }
+            .footer-brand img { width: 40px; height: 40px; }
+            .footer-bottom { padding: 12px 14px 18px; }
+        }
     </style>
 </head>
 <body>
@@ -582,6 +662,27 @@ document.addEventListener('keydown', function (e) {
 
     {% block content %}{% endblock %}
 </div>
+
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div class="footer-brand">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="ГикКульт">
+            <div>
+                <p class="footer-title">ГикКульт</p>
+                <p class="footer-sub">Учёт имущества клуба</p>
+            </div>
+        </div>
+
+        <div class="footer-authors">
+            <p class="footer-label">Разработка</p>
+            <p class="footer-names">Константин Шуклин &middot; Артём Мажаров</p>
+        </div>
+    </div>
+
+    <div class="footer-bottom">
+        <span>&copy; {{ now_year }} ГикКульт</span>
+    </div>
+</footer>
 
 </body>
 </html>

@@ -1,0 +1,25 @@
+# Виртуальное окружение
+.venv/
+venv/
+env/
+
+# Переменные окружения — НЕ коммитить
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Локальная база
+instance/
+*.db
+*.sqlite3
+
+# Системное
+.DS_Store
+Thumbs.db
+
+# Редакторы
+.vscode/
+.idea/

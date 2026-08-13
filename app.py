@@ -87,6 +87,11 @@ def create_app():
     login_manager.init_app(app)
     app.register_blueprint(main)
 
+    @app.context_processor
+    def inject_globals():
+        from datetime import datetime, timezone
+        return {'now_year': datetime.now(timezone.utc).year}
+
     with app.app_context():
         db.create_all()
         _migrate()
